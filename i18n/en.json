@@ -1,0 +1,6 @@
+{
+	"popular-pages": "Popular Pages",
+	"debug-notice": "This site is in debug mode, and may not be working correctly.",
+	"tool-ident": "This is the <a href='$1'>Popular Pages tool</a>.",
+	"report-issues": "Please <a href='$1'>report any issues</a>."
+}

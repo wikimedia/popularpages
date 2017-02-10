@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<link rel="stylesheet" href="//tools-static.wmflabs.org/cdnjs/ajax/libs/twitter-bootstrap/3.3.6/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="{{ relative_path('style.css') }}" />
+	<title>{{ 'popular-pages'|message }}</title>
+</head>
+<body>
+
+	{% if debug %}
+	<div class="alert alert-danger" id="debug-notice">{{ 'debug-notice'|message }}</div>
+	{% endif %}
+
+	<main class="container">
+		<div class="content">
+			<header class="page-header">
+				<h1>{{ 'popular-pages'|message }}</h1>
+			</header>
+			{% block content %}Hello world.{% endblock %}
+		</div>
+	</main>
+
+	<footer class="text-center text-muted">
+		<p>
+			{{ 'tool-ident'|message( 'https://wikitech.wikimedia.org/wiki/Tool:Popular_Pages' )|raw }}
+			{{ 'report-issues'|message( 'https://github.com/wikimedia/popularpages/issues' )|raw }}
+		</p>
+	</footer>
+</body>
+</html>

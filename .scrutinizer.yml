@@ -1,0 +1,28 @@
+checks:
+  php: true
+  javascript: true
+
+filter:
+  excluded_paths:
+    - vendor/
+  dependency_paths:
+    - vendor/
+
+build:
+  project_setup:
+    before:
+      - mysql -e 'CREATE DATABASE testdb;' -uroot
+      - cp config.example.inc.php tests/config.inc.php
+      - sed -i "s/database_name_here/testdb/" tests/config.inc.php
+      - sed -i "s/database_user_here/root/" tests/config.inc.php
+      - sed -i "s/database_password_here//" tests/config.inc.php
+
+  tests:
+    override:
+      - composer validate
+      - ./vendor/bin/phpcs
+      -
+        command: './vendor/bin/phpunit --coverage-clover=clover-coverage.xml'
+        coverage:
+          file: 'clover-coverage.xml'
+          format: 'clover'

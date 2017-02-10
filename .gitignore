@@ -1,0 +1,5 @@
+/vendor
+/config.inc.php
+/tests/config.inc.php
+/.idea
+
