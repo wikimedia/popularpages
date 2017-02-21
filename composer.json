@@ -4,11 +4,7 @@
 	"license": "MIT",
 	"homepage": "https://wikitech.wikimedia.org/wiki/Tool:Popular_Pages",
 	"require": {
-		"mediawiki/oauthclient": "^0.1",
-		"wikimedia/simplei18n": "^1.0",
-		"silex/silex": "^2.0",
-		"twig/twig": "^1.24",
-		"symfony/twig-bridge": "^3.1",
+		"php" : ">=5.5.9",
 		"addwiki/mediawiki-api-base": "^2.2"
 	},
 	"require-dev": {
@@ -18,23 +14,13 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"Wikimedia\\PopularPages\\": "src/"
+			"Wikimedia\\ApiHelper\\": "ApiHelper.php",
+			"Wikimedia\\Logger\\": "Logger.php"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
 			"Wikimedia\\PopularPages\\Tests\\": "tests/"
 		}
-	},
-	"scripts": {
-		"createconfig": [
-			"php -r \"file_exists('config.inc.php') || copy('config.example.inc.php', 'config.inc.php');\""
-		],
-		"post-install-cmd": [
-			"composer createconfig"
-		],
-		"post-update-cmd": [
-			"composer createconfig"
-		]
 	}
 }

@@ -2,4 +2,8 @@
 /config.inc.php
 /tests/config.inc.php
 /.idea
-
+.DS_Store
+composer.lock
+config.ini
+/scripts
+log.txt
