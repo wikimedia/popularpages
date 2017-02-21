@@ -2,7 +2,7 @@
 // Simple helper functions for API interactions
 
 require 'vendor/autoload.php';
-require 'logger.php';
+require 'Logger.php';
 
 use Mediawiki\Api\MediawikiApi;
 use Mediawiki\Api\ApiUser;
