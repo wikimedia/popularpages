@@ -139,7 +139,7 @@ class ApiHelper {
 			'token' => $session->getToken( 'edit' )
 		];
 		$result = $this->apiQuery( $params, 'edit', 'post' );
-		logToFile( 'Page ' . $page . ' updated with result: ' . $result );
+		logToFile( 'Page ' . $page . ' updated ' );
 		return $result;
 	}
 
