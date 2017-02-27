@@ -37,7 +37,7 @@ class ApiHelper {
 	 * @param $limit int Number of projects to fetch
 	 * @return array Projects
 	 */
-	function getProjects( $limit ) {
+	public function getProjects( $limit ) {
 		logToFile( 'Fetching projects list' );
 		$params = [ 'list' => 'projects' ];
 		$result = $this->apiQuery( $params );
@@ -51,7 +51,7 @@ class ApiHelper {
 	 * @param $project
 	 * @return array
 	 */
-	function getProjectPages( $project ) {
+	public function getProjectPages( $project ) {
 		logToFile( 'Fetching pages and assessments for project ' . $project );
 		$params = [
 			'list' => 'projectpages',
@@ -129,7 +129,7 @@ class ApiHelper {
 	 * @param $text string Text to set on the page
 	 * @return array|\GuzzleHttp\Promise\PromiseInterface
 	 */
-	function setText( $page, $text ) {
+	public function setText( $page, $text ) {
 		logToFile( 'Attempting to update wikipedia page' );
 		$session = new MediawikiSession( $this->api );
 		$params = [
