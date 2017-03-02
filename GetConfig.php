@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of CopyPatrol application
  * Copyright (C) 2016  Niharika Kohli and contributors
@@ -19,13 +20,28 @@
  * @author Niharika Kohli <nkohli@wikimedia.org>
  * @copyright © 2016 Niharika Kohli and contributors.
  */
-/**
- * Log given message to file
- *
- * @param $message string Message to record in file
- */
-function logToFile( $message ) {
-	$file = fopen( 'log.txt', 'a' );
-	$output = date( 'Y-m-d H:i:s' ) . '  ' . $message;
-	fwrite( $file, $output . PHP_EOL );
+
+class GetConfig {
+
+	public function getJSONConfig( $page ) {
+		$api = new ApiHelper();
+		$params = [
+			'page' => $page,
+			'prop' => 'wikitext'
+		];
+		$res = $api->apiQuery( $params, 'parse' );
+		$res = json_decode( $res['parse']['wikitext'], true );
+		$config = [];
+		foreach ( $res as $k => $v ) {
+			if ( $k === 'description' ) {
+				continue;
+			}
+			$config[$k] = [
+				'Report' => $v['Report'],
+				'Limit' => $v['Limit'],
+				'Name' => $v['Name']
+			];
+		}
+		return $config;
+	}
 }

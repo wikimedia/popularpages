@@ -1,38 +1,38 @@
 <?php
-use GuzzleHttp\Promise\Promise;
 
 require 'vendor/autoload.php';
-require 'ApiHelper.php';
 
 date_default_timezone_set( 'UTC' );
 
-$api_url = 'https://en.wikipedia.org/w/api.php';
+$api = new ApiHelper();
 
-$api = new ApiHelper( $api_url );
-$projects = $api->getProjects( 50 );
+$configfn = new GetConfig();
+logToFile( 'Running new cycle. Fetching config.' );
+$config = $configfn->getJSONConfig( 'User:Community Tech bot/Popular pages config.json' );
 
-foreach ( $projects as $project ) {
+foreach ( $config as $project => $info ) {
 	logToFile( 'Beginning to process: ' . $project );
-	$pages = $api->getProjectPages( $project ); // Returns { 'title' => array( 'class' => '', 'importance' => '' ),... }
-	$month = (int)date( 'm' ) - 1;
-	$year = (int)date( 'Y' );
-	if ( $month == 0 ) {
-		$month = 12;
-		$year = $year - 1;
+	// Check the project exists
+	if ( !$api->doesTitleExist( $project ) ) {
+		logToFile( 'Error: Project page for '. $project .' does not exist!' );
+		continue;
 	}
-	$days = cal_days_in_month( CAL_GREGORIAN, $month, $year );
-	$viewstart = (string)$year . (string)sprintf( "%02d", $month ) . '0100';
-	$viewend = (string)$year . (string)sprintf( "%02d", $month ) . (string)$days . '00';
-	$pageviewstart = $year . '-' . $month . '-' . $days;
-	$pageviewend = $year . '-' . $month . '-' . $days;
-	$views = $api->getMonthlyPageviews( array_keys( $pages ), $viewstart, $viewend );
-	$views = array_slice( $views, 0, 1000, true );
+	// Check config is not empty
+	if ( !isset( $info['Name'] ) || !isset( $info['Limit'] ) || !isset( $info['Report'] ) ) {
+		logToFile( 'Incomplete data in config. Aborting.' );
+		continue;
+	}
+	$pages = $api->getProjectPages( $info['Name'] ); // Returns { 'title' => array( 'class' => '', 'importance' => '' ),... }
+	$start = strtotime( 'first day of previous month' );
+	$end = strtotime( 'last day of previous month' );
+	$views = $api->getMonthlyPageviews( array_keys( $pages ), date( 'Ymd00', $start ), date( 'Ymd00', $end ) );
+	$views = array_slice( $views, 0, $info['Limit'], true );
     $output = '
-This is a list of pages in the scope of WikiProject ' . $project . ' along with pageviews.
+This is a list of pages in the scope of ' . $project . ' along with pageviews.
 
 To report bugs, please write on the [[meta:User_talk:Community_Tech_bot| Community tech bot]] talk page on Meta.
 
-Period: '. $pageviewstart . ' to '. $pageviewend . '.
+Period: '. date( 'Y-m-d', $start ) . ' to '. date( 'Y-m-d', $end ) . '.
 
 Updated on: ~~~~~
 
@@ -48,20 +48,20 @@ Updated on: ~~~~~
 ';
 	$index = 1;
 	foreach ( $views as $title => $view ) {
-		$output .= '| ' . $index . '
-| [[' . $title . ']]
-| ' . $view. '
-| ' . floor( $view / (int)date('t') ) . '
-{{class|' . $pages[$title]['class'] . '}}
-{{importance|' . $pages[$title]['importance'] . '}}
-| [https://tools.wmflabs.org/pageviews/?project=en.wikipedia.org&range=this-month&pages='. str_replace( ' ', '_', $title ) .' Link]
+		$output .= '| '. $index .'
+| [['. $title .']]
+| '. $view .'
+| '. floor( $view / ( floor( $end - $start ) / 60*60*24 ) ) .'
+{{class|'. $pages[$title]['class'] .'}}
+{{importance|'. $pages[$title]['importance'] .'}}
+| [https://tools.wmflabs.org/pageviews/?project=en.wikipedia.org&start='. date( 'Y-m-d', $start ) .'&end='. date( 'Y-m-d', $end ) .'&pages='. str_replace( ' ', '_', $title ) .' Link]
 |-
 ';
 		$index++;
 	}
 	$output .= '|}';
-	$api->setText( 'Wikipedia:WikiProject_' . $project . '/Popular_pages', $output );
-	logToFile( 'Finished processing: ' . $project );
+	$api->setText( $info['Report'], $output );
+	logToFile( 'Finished processing: '. $project );
 }
 
 

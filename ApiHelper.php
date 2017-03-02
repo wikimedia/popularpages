@@ -1,9 +1,6 @@
 <?php
 // Simple helper functions for API interactions
 
-require 'vendor/autoload.php';
-require 'Logger.php';
-
 use Mediawiki\Api\MediawikiApi;
 use Mediawiki\Api\ApiUser;
 use Mediawiki\Api\FluentRequest;
@@ -24,7 +21,7 @@ class ApiHelper {
 	 *
 	 * @param $apiurl string Url to build the Api endpoint and do all further queries against
 	 */
-	public function __construct( $apiurl ) {
+	public function __construct( $apiurl = 'https://en.wikipedia.org/w/api.php' ) {
 		$this->api = MediawikiApi::newFromApiEndpoint( $apiurl );
 		$creds = parse_ini_file( 'config.ini' );
 		$this->user = new ApiUser( $creds['botuser'], $creds['botpass'], $apiurl );
@@ -37,12 +34,29 @@ class ApiHelper {
 	 * @param $limit int Number of projects to fetch
 	 * @return array Projects
 	 */
-	function getProjects( $limit ) {
+	function getProjects( $limit = 2000 ) {
 		logToFile( 'Fetching projects list' );
 		$params = [ 'list' => 'projects' ];
 		$result = $this->apiQuery( $params );
 		// Chop off the array to required limits
 		return array_slice( $result['query']['projects'], 0, $limit );
+	}
+
+	/**
+	 * Check if a given title exists on wikipedia
+	 *
+	 * @param $title string Title to check existence for
+	 * @return bool True if title exists else false
+	 */
+	function doesTitleExist( $title ) {
+		$params = [ 'titles' => $title ];
+		$result = $this->apiQuery( $params );
+		foreach ( $result['query']['pages'] as $r ) {
+			if ( isset( $r['missing'] ) || isset( $r['invalid'] ) ) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/**
@@ -87,7 +101,7 @@ class ApiHelper {
 				}
 			}
 		}
-		logToFile( 'Total number of pages fetched: ' . count( $pages ) );
+		logToFile( 'Total number of pages fetched: '. count( $pages ) );
 		return $pages;
 	}
 
@@ -100,12 +114,12 @@ class ApiHelper {
 	 * @return array|int
 	 */
 	public function getMonthlyPageviews( $pages, $start, $end ) {
-		logToFile( 'Fetching monthly pageviews for pages' );
+		logToFile( 'Fetching monthly pageviews' );
 		$results = [];
-		$lim = 30; // Throttling purposes
+		$lim = 99; // Throttling purposes
 		foreach ( $pages as $page ) {
 			try {
-				$url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/' . rawurlencode( $page ) . '/monthly/' . $start . '/' . $end;
+				$url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/'. rawurlencode( $page ) .'/monthly/'. $start .'/'. $end;
 				$result = json_decode( file_get_contents( $url ), true );
 				$results[$page] = isset( $result['items'] ) ? $result['items'][0]['views'] : 0;
 			} catch ( Exception $e ) {
@@ -113,8 +127,8 @@ class ApiHelper {
 			}
 			$lim--;
 			if ( $lim == 0 ) {
-				sleep( 0.1 );
-				$lim = 30;
+				sleep( 1 );
+				$lim = 99;
 			}
 		}
 		logToFile( 'Pageviews fetch complete' );
