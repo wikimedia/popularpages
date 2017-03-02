@@ -1,6 +1,6 @@
 <?php
 
-require 'vendor/autoload.php';
+include_once 'vendor/autoload.php';
 
 date_default_timezone_set( 'UTC' );
 
