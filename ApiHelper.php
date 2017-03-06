@@ -15,6 +15,7 @@ class ApiHelper {
 
 	protected $api;
 	protected $user;
+	protected $token;
 
 	/**
 	 * ApiHelper constructor.
@@ -26,6 +27,8 @@ class ApiHelper {
 		$creds = parse_ini_file( 'config.ini' );
 		$this->user = new ApiUser( $creds['botuser'], $creds['botpass'], $apiurl );
 		$this->api->login( $this->user );
+		$session = new MediawikiSession( $this->api );
+		$this->token = $session->getToken( 'edit' );
 	}
 
 	/**
@@ -88,7 +91,6 @@ class ApiHelper {
 			}
 		}
 		while ( isset( $result['continue']['wppcontinue'] ) ) {
-			sleep( 0.1 );
 			$params['wppcontinue'] = $result['continue']['wppcontinue'];
 			$result = $this->apiQuery( $params );
 			$projects = $result['query']['projects'][$project];
@@ -127,7 +129,7 @@ class ApiHelper {
 			}
 			$lim--;
 			if ( $lim == 0 ) {
-				sleep( 1 );
+				usleep( 10000 );
 				$lim = 99;
 			}
 		}
@@ -145,15 +147,18 @@ class ApiHelper {
 	 */
 	function setText( $page, $text ) {
 		logToFile( 'Attempting to update wikipedia page' );
-		$session = new MediawikiSession( $this->api );
 		$params = [
 			'title' => $page,
 			'text' => $text,
 			'summary' => 'Popular pages report update. -- Community Tech bot',
-			'token' => $session->getToken( 'edit' )
+			'token' => $this->token
 		];
 		$result = $this->apiQuery( $params, 'edit', 'post' );
-		logToFile( 'Page ' . $page . ' updated ' );
+		if ( $result ) {
+			logToFile( 'Page ' . $page . ' updated' );
+		} else {
+			logToFile( 'Page ' . $page . ' could not be updated' );
+		}
 		return $result;
 	}
 
