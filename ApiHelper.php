@@ -15,7 +15,6 @@ class ApiHelper {
 
 	protected $api;
 	protected $user;
-	protected $token;
 
 	/**
 	 * ApiHelper constructor.
@@ -27,8 +26,6 @@ class ApiHelper {
 		$creds = parse_ini_file( 'config.ini' );
 		$this->user = new ApiUser( $creds['botuser'], $creds['botpass'], $apiurl );
 		$this->api->login( $this->user );
-		$session = new MediawikiSession( $this->api );
-		$this->token = $session->getToken( 'edit' );
 	}
 
 	/**
@@ -146,12 +143,14 @@ class ApiHelper {
 	 * @return array|\GuzzleHttp\Promise\PromiseInterface
 	 */
 	function setText( $page, $text ) {
+		$session = new MediawikiSession( $this->api );
+		$token = $session->getToken( 'edit' );
 		logToFile( 'Attempting to update wikipedia page' );
 		$params = [
 			'title' => $page,
 			'text' => $text,
 			'summary' => 'Popular pages report update. -- Community Tech bot',
-			'token' => $this->token
+			'token' => $token
 		];
 		$result = $this->apiQuery( $params, 'edit', 'post' );
 		if ( $result ) {
