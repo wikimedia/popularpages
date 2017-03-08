@@ -3,7 +3,6 @@
 // in the first run of the bot. It tries to update a report twice before moving on to the next one.
 // At the end, it updates the popular pages report index page with udpated timestamps.
 include_once 'vendor/autoload.php';
-include_once 'index.php';
 
 $api = new ApiHelper();
 
@@ -13,6 +12,7 @@ $creds = parse_ini_file( 'config.ini' );
 $link = mysqli_connect( $creds['dbhost'], $creds['dbuser'], $creds['dbpass'], $creds['dbname'] );
 $query = "SELECT * FROM checklist";
 $data = mysqli_query( $link, $query );
+var_dump( $data );
 $notUpdated = [];
 
 if ( $data->num_rows > 0 ) {
@@ -35,4 +35,4 @@ if ( $data->num_rows > 0 ) {
 logToFile( 'Number of projects not updated: ' . count( $notUpdated ) );
 
 // Instantiate a new UpdateReport with projects not updated yet
-new UpdateReport( $notUpdated );
+new UpdateReports( $notUpdated );
