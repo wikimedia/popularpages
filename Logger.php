@@ -1,6 +1,6 @@
 <?php
 /**
- * This file is part of CopyPatrol application
+ * This file is part of Popularpages application
  * Copyright (C) 2016  Niharika Kohli and contributors
  *
  * This program is free software: you can redistribute it and/or modify it

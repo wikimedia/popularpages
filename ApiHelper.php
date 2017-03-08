@@ -15,6 +15,7 @@ class ApiHelper {
 
 	protected $api;
 	protected $user;
+	protected $link;
 
 	/**
 	 * ApiHelper constructor.
@@ -25,6 +26,7 @@ class ApiHelper {
 		$this->api = MediawikiApi::newFromApiEndpoint( $apiurl );
 		$creds = parse_ini_file( 'config.ini' );
 		$this->user = new ApiUser( $creds['botuser'], $creds['botpass'], $apiurl );
+		$this->link = mysqli_connect( $creds['dbhost'], $creds['dbuser'], $creds['dbpass'], $creds['dbname'] );
 		$this->api->login( $this->user );
 	}
 
@@ -159,6 +161,22 @@ class ApiHelper {
 			logToFile( 'Page ' . $page . ' could not be updated' );
 		}
 		return $result;
+	}
+
+	/**
+	 * Update timestamp of report update for a project in the DB
+	 *
+	 * @param $project string Project name to against timestamp against
+	 */
+	public function updateDB( $project ) {
+		$date = date( 'Y-m-d' );
+		$query = "UPDATE checklist SET updated = " . (string)$date . " WHERE project = " . $project;
+		$res = mysqli_query( $this->link, $query );
+		if ( $res ) {
+			logToFile( 'Database updated' );
+		} else {
+			logToFile( 'Database update failed!' );
+		}
 	}
 
 	/**
