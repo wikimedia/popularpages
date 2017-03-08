@@ -170,7 +170,7 @@ class ApiHelper {
 	 */
 	public function updateDB( $project ) {
 		$date = date( 'Y-m-d' );
-		$query = "UPDATE checklist SET updated = " . (string)$date . " WHERE project = " . $project;
+		$query = "UPDATE checklist SET updated = '" . (string)$date . "' WHERE project = '" . $project ."'";
 		$res = mysqli_query( $this->link, $query );
 		if ( $res ) {
 			logToFile( 'Database updated' );
