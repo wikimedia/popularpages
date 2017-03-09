@@ -6,9 +6,8 @@ class UpdateReports {
 
 	public function __construct( $projects = null ) {
 		$this->api = new ApiHelper();
-		$configfn = new GetConfig();
 		logToFile( 'Running new cycle. Fetching config.' );
-		$config = $configfn->getJSONConfig( 'User:Community Tech bot/Popular pages config.json' );
+		$config = $this->api->getJSONConfig();
 		if ( isset( $projects ) ) {
 			foreach ( $config as $project => $info ) {
 				if ( !in_array( $info['Name'], $projects ) ) {
@@ -77,5 +76,7 @@ Updated on: ~~~~~
 			$this->api->updateDB( $info['Name'] );
 			logToFile( 'Finished processing: ' . $project );
 		}
+		// Update index page
+		$this->api->updateIndex( 'User:Community Tech bot/Popular pages' );
 	}
 }

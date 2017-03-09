@@ -34,9 +34,12 @@ class ApiHelper {
 	 * @param $limit int Number of projects to fetch
 	 * @return array Projects
 	 */
-	function getProjects( $limit = 2000 ) {
+	public function getProjects( $limit = 2000 ) {
 		logToFile( 'Fetching projects list' );
-		$params = [ 'list' => 'projects' ];
+		$params = [
+			'list' => 'projects',
+			'pjsubprojects' => 'true'
+		];
 		$result = $this->apiQuery( $params );
 		// Chop off the array to required limits
 		return array_slice( $result['query']['projects'], 0, $limit );
@@ -48,7 +51,7 @@ class ApiHelper {
 	 * @param $title string Title to check existence for
 	 * @return bool True if title exists else false
 	 */
-	function doesTitleExist( $title ) {
+	public function doesTitleExist( $title ) {
 		$params = [ 'titles' => $title ];
 		$result = $this->apiQuery( $params );
 		foreach ( $result['query']['pages'] as $r ) {
@@ -65,7 +68,7 @@ class ApiHelper {
 	 * @param $project
 	 * @return array
 	 */
-	function getProjectPages( $project ) {
+	public function getProjectPages( $project ) {
 		logToFile( 'Fetching pages and assessments for project ' . $project );
 		$params = [
 			'list' => 'projectpages',
@@ -77,6 +80,7 @@ class ApiHelper {
 		$projects = $result['query']['projects'][$project];
 		$pages = [];
 		if ( !$projects ) {
+			logToFile( 'Zero pages found. Aborting!' );
 			return [];
 		}
 		foreach( $projects as $p ) {
@@ -136,13 +140,50 @@ class ApiHelper {
 	}
 
 	/**
+	 * Update index page for the bot, showing last update timestamps and projects
+	 */
+	public function updateIndex( $page ) {
+		$creds = parse_ini_file( 'config.ini' );
+		$link = mysqli_connect( $creds['dbhost'], $creds['dbuser'], $creds['dbpass'], $creds['dbname'] );
+		$query = "SELECT * FROM checklist";
+		$data = mysqli_query( $link, $query );
+		$config = $this->getJSONConfig();
+		$output = '';
+		if ( $data->num_rows > 0 ) {
+			$output .= '
+The table below is the wikitext-table representation of the config used for generating Popular pages for wikiprojects. The actual config can be found at [[User:Community Tech bot/Popular pages config.json]].
+\'\'\'Please do not edit this page\'\'\'. All edits will be overwritten the next time bot updates this page.
+== Config ==
+{| class="wikitable sortable"
+!Project
+!Report
+!Limit
+!Updated on
+';
+			while ( $row = $data->fetch_assoc() ) {
+				$config[$row['project']]['Updated'] = $row['updated'];
+			}
+			foreach ( $config as $project => $info ) {
+				$output .= '
+|-
+|[['. $info['Name'] .']]
+|[['. $info['Report'] .']]
+|'. $info['Limit'] .'
+|'. $info['Updated'] .'
+';
+			}
+		}
+		$this->setText( $page, $output );
+	}
+
+	/**
 	 * Update a wikipedia page with the given text
 	 *
 	 * @param $page string Page to set text for
 	 * @param $text string Text to set on the page
 	 * @return array|\GuzzleHttp\Promise\PromiseInterface
 	 */
-	function setText( $page, $text ) {
+	public function setText( $page, $text ) {
 		$session = new MediawikiSession( $this->api );
 		$token = $session->getToken( 'edit' );
 		logToFile( 'Attempting to update wikipedia page' );
@@ -159,6 +200,66 @@ class ApiHelper {
 			logToFile( 'Page ' . $page . ' could not be updated' );
 		}
 		return $result;
+	}
+
+	/**
+	 * Fetch JSON config from wiki config page
+	 *
+	 * @param $page string Wikipedia page title to fetch config from
+	 * @return array Config data
+	 */
+	public function getJSONConfig( $page = 'User:Community Tech bot/Popular pages config.json' ) {
+		$api = new ApiHelper();
+		$params = [
+			'page' => $page,
+			'prop' => 'wikitext'
+		];
+		$res = $api->apiQuery( $params, 'parse' );
+		$res = json_decode( $res['parse']['wikitext'], true );
+		$config = [];
+		foreach ( $res as $k => $v ) {
+			if ( $k === 'description' ) {
+				continue;
+			}
+			$config[$k] = [
+				'Report' => $v['Report'],
+				'Limit' => $v['Limit'],
+				'Name' => $v['Name']
+			];
+		}
+		return $config;
+	}
+
+	/**
+	 * Get projects which have not been updated for current cycle
+	 *
+	 * @return array List of projects which were updated more than 25 days ago from current date
+	 */
+	public function getStaleProjects() {
+		$creds = parse_ini_file( 'config.ini' );
+		$link = mysqli_connect( $creds['dbhost'], $creds['dbuser'], $creds['dbpass'], $creds['dbname'] );
+		$query = "SELECT * FROM checklist";
+		$data = mysqli_query( $link, $query );
+		$notUpdated = [];
+
+		if ( $data->num_rows > 0 ) {
+			while ( $row = $data->fetch_assoc() ) {
+				$project = $row['project'];
+				$lastUpdate = $row['updated'];
+				if ( !isset( $lastUpdate ) ) {
+					$notUpdated[] = $project;
+					continue;
+				} else {
+					$dateDiff = date_diff( new DateTime(), new DateTime( $lastUpdate ), true );
+					if ( (int)$dateDiff->format( '%d' ) > 25 ) {
+						// We found a project not updated for current month yet, add it to the array of projects not updated
+						$notUpdated[] = $project;
+					}
+				}
+			}
+		}
+
+		return $notUpdated;
 	}
 
 	/**
