@@ -16,7 +16,6 @@
 		"files": [
 			"Logger.php",
 			"ApiHelper.php",
-			"GetConfig.php",
 			"UpdateReports.php"
 		]
 	},
