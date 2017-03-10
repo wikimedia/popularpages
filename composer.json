@@ -13,10 +13,11 @@
 		"phpunit/phpunit": "^4.8"
 	},
 	"autoload": {
-		"psr-4": {
-			"Wikimedia\\ApiHelper\\": "ApiHelper.php",
-			"Wikimedia\\Logger\\": "Logger.php"
-		}
+		"files": [
+			"Logger.php",
+			"ApiHelper.php",
+			"UpdateReports.php"
+		]
 	},
 	"autoload-dev": {
 		"psr-4": {
