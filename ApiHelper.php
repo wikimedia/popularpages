@@ -153,7 +153,7 @@ class ApiHelper {
 			$output .= '
 The table below is the wikitext-table representation of the config used for generating Popular pages for wikiprojects. The actual config can be found at [[User:Community Tech bot/Popular pages config.json]].
 \'\'\'Please do not edit this page\'\'\'. All edits will be overwritten the next time bot updates this page.
-== Config ==
+== List of projects ==
 {| class="wikitable sortable"
 !Project
 !Report
