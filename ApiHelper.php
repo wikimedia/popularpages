@@ -167,20 +167,20 @@ The table below is the wikitext-table representation of the config used for gene
 ';
 			while ( $row = $data->fetch_assoc() ) {
 				if ( $config["Wikipedia:WikiProject " . $row['project']] ) {
-					$config[$row['project']]['Updated'] = $row['updated'];
+					$config["Wikipedia:WikiProject " . $row['project']]['Updated'] = $row['updated'];
 				}
 			}
-		}
-		foreach ( $config as $project => $info ) {
-			$output .= '
+			foreach ( $config as $project => $info ) {
+				$output .= '
 |-
-|[['. $project .']]
-|[['. $info['Report'] .']]
-|'. $info['Limit'] .'
-|'. $info['Updated'] .'
+|[[' . $project . ']]
+|[[' . $info['Report'] . ']]
+|' . $info['Limit'] . '
+|' . $info['Updated'] . '
 ';
+			}
+			$this->setText( $page, $output );
 		}
-		$this->setText( $page, $output );
 	}
 
 	/**
@@ -289,8 +289,10 @@ The table below is the wikitext-table representation of the config used for gene
 
 	/**
 	 * Wrapper to make simple API query for JSON and in formatversion 2
-	 * @param string[] $params Params to add to the request
-	 * @param boolean $async Pass 'true' to make asynchronous
+	 * @param $params string Params to add to the request
+	 * @param $action string Query action
+	 * @param $method string Get/post
+	 * @param $async bool Pass 'true' to make asynchronous
 	 * @return GuzzleHttp\Promise\PromiseInterface|array Promise if $async is true,
 	 *   otherwise the API result in the form of an array
 	 */
