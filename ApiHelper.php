@@ -34,7 +34,7 @@ class ApiHelper {
 	 * @param $limit int Number of projects to fetch
 	 * @return array Projects
 	 */
-	public function getProjects( $limit = 2000 ) {
+	public function getProjects( $limit = 5000 ) {
 		logToFile( 'Fetching projects list' );
 		$params = [
 			'list' => 'projects',
@@ -141,6 +141,8 @@ class ApiHelper {
 
 	/**
 	 * Update index page for the bot, showing last update timestamps and projects
+	 *
+	 * @param $page string Page link
 	 */
 	public function updateIndex( $page ) {
 		$creds = parse_ini_file( 'config.ini' );
@@ -153,6 +155,9 @@ class ApiHelper {
 			$output .= '
 The table below is the wikitext-table representation of the config used for generating Popular pages for wikiprojects. The actual config can be found at [[User:Community Tech bot/Popular pages config.json]].
 \'\'\'Please do not edit this page\'\'\'. All edits will be overwritten the next time bot updates this page.
+
+-- ~~~~
+
 == List of projects ==
 {| class="wikitable sortable"
 !Project
@@ -161,17 +166,19 @@ The table below is the wikitext-table representation of the config used for gene
 !Updated on
 ';
 			while ( $row = $data->fetch_assoc() ) {
-				$config[$row['project']]['Updated'] = $row['updated'];
+				if ( $config["Wikipedia:WikiProject " . $row['project']] ) {
+					$config[$row['project']]['Updated'] = $row['updated'];
+				}
 			}
-			foreach ( $config as $project => $info ) {
-				$output .= '
+		}
+		foreach ( $config as $project => $info ) {
+			$output .= '
 |-
-|[['. $info['Name'] .']]
+|[['. $project .']]
 |[['. $info['Report'] .']]
 |'. $info['Limit'] .'
 |'. $info['Updated'] .'
 ';
-			}
 		}
 		$this->setText( $page, $output );
 	}
