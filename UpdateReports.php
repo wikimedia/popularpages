@@ -60,8 +60,8 @@ Updated on: ~~~~~
 			foreach ( $views as $title => $view ) {
 				$output .= '| ' . $index . '
 | [[' . $title . ']]
-| ' . $view . '
-| ' . floor( $view / ( floor( ( $end - $start ) / ( 60 * 60 * 24 ) ) ) ) . '
+| {{formatnum:' . $view . '}}
+| {{formatnum:' . floor( $view / ( floor( ( $end - $start ) / ( 60 * 60 * 24 ) ) ) ) . '}}
 {{class|' . $pages[$title]['class'] . '}}
 {{importance|' . $pages[$title]['importance'] . '}}
 | [https://tools.wmflabs.org/pageviews/?project=en.wikipedia.org&start=' . date( 'Y-m-d', $start ) . '&end=' . date( 'Y-m-d', $end ) . '&pages=' . str_replace( ' ', '_', $title ) . ' Link]

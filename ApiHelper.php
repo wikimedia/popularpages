@@ -121,12 +121,13 @@ class ApiHelper {
 		$results = [];
 		$lim = 99; // Throttling purposes
 		foreach ( $pages as $page ) {
-			try {
-				$url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/'. rawurlencode( $page ) .'/monthly/'. $start .'/'. $end;
-				$result = json_decode( file_get_contents( $url ), true );
-				$results[$page] = isset( $result['items'] ) ? $result['items'][0]['views'] : 0;
-			} catch ( Exception $e ) {
-				logToFile( $e->getCode() . $e->getMessage() );
+			$url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/'. rawurlencode( $page ) .'/monthly/'. $start .'/'. $end;
+			$result = json_decode( file_get_contents( $url ), true );
+			$results[$page] = isset( $result['items'] ) ? $result['items'][0]['views'] : 0;
+			if ( !isset( $result['items'] ) ) {
+				$file = fopen( 'nopageviewdata.txt', 'a' );
+				$output = date( 'Y-m-d H:i:s' ) . '  ' . $result;
+				fwrite( $file, $output . PHP_EOL );
 			}
 			$lim--;
 			if ( $lim == 0 ) {
