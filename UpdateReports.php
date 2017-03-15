@@ -33,6 +33,9 @@ class UpdateReports {
 				continue;
 			}
 			$pages = $this->api->getProjectPages( $info['Name'] ); // Returns { \'title\' => array( \'class\' => \'\', \'importance\' => \'\' ),... }
+			if ( !isset( $pages ) || empty( $pages ) ) {
+				continue;
+			}
 			$start = strtotime( 'first day of previous month' );
 			$end = strtotime( 'last day of previous month' );
 			$views = $this->api->getMonthlyPageviews( array_keys( $pages ), date( 'Ymd00', $start ), date( 'Ymd00', $end ) );
