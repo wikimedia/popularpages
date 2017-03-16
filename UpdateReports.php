@@ -41,7 +41,7 @@ class UpdateReports {
 			$views = $this->api->getMonthlyPageviews( array_keys( $pages ), date( 'Ymd00', $start ), date( 'Ymd00', $end ) );
 			$views = array_slice( $views, 0, $info['Limit'], true );
 			$output = '
-This is a list of pages in the scope of ' . $project . ' along with pageviews.
+This is a list of pages in the scope of [[' . $project . ']] along with pageviews.
 
 To report bugs, please write on the [[meta:User_talk:Community_Tech_bot| Community tech bot]] talk page on Meta.
 
