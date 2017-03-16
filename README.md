@@ -16,4 +16,4 @@ See [the tool's homepage](https://wikitech.wikimedia.org/wiki/Tool:Popular_Pages
 * **`UpdateReports.php`**: The file that actually updates projects. Takes list of projects to update as an optional param, else updates all projects.
 * **`ApiHelper.php`**: Contains all helper functions for dealing with the Api and Database (bit of a misnomer).
 * **`Logger.php`**: Responsible for logging updates to `log.txt`.
-
+* **`generateReport.php`**: Script to manually regenerate a report for a single project.
