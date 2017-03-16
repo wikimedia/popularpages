@@ -33,7 +33,7 @@ class UpdateReports {
 				continue;
 			}
 			$pages = $this->api->getProjectPages( $info['Name'] ); // Returns { \'title\' => array( \'class\' => \'\', \'importance\' => \'\' ),... }
-			if ( !isset( $pages ) || empty( $pages ) ) {
+			if ( empty( $pages ) ) {
 				continue;
 			}
 			$start = strtotime( 'first day of previous month' );
