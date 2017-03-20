@@ -1,6 +1,5 @@
 <?php
 // Simple helper functions for API interactions
-
 use Mediawiki\Api\MediawikiApi;
 use Mediawiki\Api\ApiUser;
 use Mediawiki\Api\FluentRequest;
@@ -109,7 +108,7 @@ class ApiHelper {
 	}
 
 	/**
-	 * Get monthly pageviews for given page between gives dates
+	 * Get monthly pageviews for given page and its redirects between gives dates
 	 *
 	 * @param $pages array of pages to fetch pageviews for
 	 * @param $start string Query datetime start string
@@ -119,20 +118,36 @@ class ApiHelper {
 	public function getMonthlyPageviews( $pages, $start, $end ) {
 		logToFile( 'Fetching monthly pageviews' );
 		$results = [];
-		$lim = 99; // Throttling purposes
 		foreach ( $pages as $page ) {
-			$url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/'. rawurlencode( $page ) .'/monthly/'. $start .'/'. $end;
-			$result = json_decode( file_get_contents( $url ), true );
-			$results[$page] = isset( $result['items'] ) ? $result['items'][0]['views'] : 0;
-			if ( !isset( $result['items'] ) ) {
-				$file = fopen( 'nopageviewdata.txt', 'a' );
-				$output = date( 'Y-m-d H:i:s' ) . '  ' . $result;
-				fwrite( $file, $output . PHP_EOL );
+			$results[$page] = 0; // Initialize with 0 views
+			// Get redirects
+			$redirects = $this->apiQuery( [ 'titles' => $page, 'prop' => 'redirects', 'rdlimit' => 500 ] );
+			$titles = [$page]; // An array to hold the main page and its redirects
+			// Extract all redirect titles
+			if ( isset( $redirects['query']['pages'][0]['redirects'] ) ) {
+				foreach ( $redirects['query']['pages'][0]['redirects'] as $r ) {
+					$titles[] = $r['title'];
+				}
 			}
-			$lim--;
-			if ( $lim == 0 ) {
-				usleep( 10000 );
-				$lim = 99;
+			// Get monthly pageviews for all of the titles i.e. original page and its redirects
+			$lim = 99;
+			foreach ( $titles as $title ) {
+				$url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/' . rawurlencode( $title ) . '/monthly/' . $start . '/' . $end;
+				$result = json_decode( file_get_contents( $url ), true );
+				if ( isset( $result['items'] ) ) {
+					$results[$page] += (int)$result['items'][0]['views'];
+				} else {
+					// Report missing data
+					$file = fopen( 'nopageviewdata.txt', 'a' );
+					$output = date( 'Y-m-d H:i:s' ) . '  ' . $url;
+					fwrite( $file, $output . PHP_EOL );
+				}
+				// Get redirects
+				$lim--;
+				if ( $lim == 0 ) {
+					usleep( 10000 );
+					$lim = 99;
+				}
 			}
 		}
 		logToFile( 'Pageviews fetch complete' );
