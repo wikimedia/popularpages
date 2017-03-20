@@ -72,7 +72,9 @@ Updated on: ~~~~~
 ';
 				$index++;
 			}
-			$output .= '|}';
+			$output .= '
+|}
+[[Category:Lists of popular pages by WikiProject]]';
 			// Update report text on wiki page
 			$this->api->setText( $info['Report'], $output );
 			// Update database for the project
