@@ -40,12 +40,20 @@ class UpdateReports {
 			$end = strtotime( 'last day of previous month' );
 			$views = $this->api->getMonthlyPageviews( array_keys( $pages ), date( 'Ymd00', $start ), date( 'Ymd00', $end ) );
 			$views = array_slice( $views, 0, $info['Limit'], true );
-			$output = '
+			$hasListSection = $this->api->doesListSectionExist( $info['Report'] );
+			$output = '';
+			// If the report page doesn't already exist, include a default header:
+			if ( !$hasListSection ) {
+				$output .= '
 This is a list of pages in the scope of [[' . $project . ']] along with pageviews.
 
 To report bugs, please write on the [[meta:User_talk:Community_Tech_bot| Community tech bot]] talk page on Meta.
 
-Period: ' . date( 'Y-m-d', $start ) . ' to ' . date( 'Y-m-d', $end ) . '.
+== List ==
+';
+			}
+			$output .=
+'Period: ' . date( 'Y-m-d', $start ) . ' to ' . date( 'Y-m-d', $end ) . '.
 
 Updated on: ~~~~~
 
@@ -76,7 +84,13 @@ Updated on: ~~~~~
 |}
 [[Category:Lists of popular pages by WikiProject]]';
 			// Update report text on wiki page
-			$this->api->setText( $info['Report'], $output );
+			if ( $hasListSection ) {
+				// Update only the section if it exists
+				$this->api->setText( $info['Report'], $output, 1 );
+			} else {
+				// Update complete page
+				$this->api->setText( $info['Report'], $output );
+			}
 			// Update database for the project
 			$this->api->updateDB( $info['Name'] );
 			logToFile( 'Finished processing: ' . $project );

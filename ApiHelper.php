@@ -62,6 +62,22 @@ class ApiHelper {
 	}
 
 	/**
+	 * Checks if the first section ("List" section) is present already in a page
+	 *
+	 * @param $title string The page title we're looking for first section in
+	 * @return bool True if exists, else false
+	 */
+	public function doesListSectionExist( $title ) {
+		$params = [ 'page' => $title,  'section' => 1 ];
+		$result = $this->apiQuery( $params, 'parse' );
+		if ( isset( $result['error'] ) ) {
+			// We return false if we encountered an error
+			return false;
+		}
+		return true;
+	}
+
+	/**
 	 * Get project titles & assessments for all pages in a wikiproject
 	 *
 	 * @param $project
@@ -118,6 +134,7 @@ class ApiHelper {
 	public function getMonthlyPageviews( $pages, $start, $end ) {
 		logToFile( 'Fetching monthly pageviews' );
 		$results = [];
+		$lim = 99;
 		foreach ( $pages as $page ) {
 			$results[$page] = 0; // Initialize with 0 views
 			// Get redirects
@@ -130,7 +147,6 @@ class ApiHelper {
 				}
 			}
 			// Get monthly pageviews for all of the titles i.e. original page and its redirects
-			$lim = 99;
 			foreach ( $titles as $title ) {
 				$url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/' . rawurlencode( $title ) . '/monthly/' . $start . '/' . $end;
 				$result = json_decode( file_get_contents( $url ), true );
@@ -142,14 +158,21 @@ class ApiHelper {
 					$output = date( 'Y-m-d H:i:s' ) . '  ' . $url;
 					fwrite( $file, $output . PHP_EOL );
 				}
-				// Get redirects
+				// Throttling purposes
 				$lim--;
 				if ( $lim == 0 ) {
 					usleep( 10000 );
 					$lim = 99;
 				}
 			}
+			// Throttling purposes
+			$lim--;
+			if ( $lim == 0 ) {
+				usleep( 10000 );
+				$lim = 99;
+			}
 		}
+
 		logToFile( 'Pageviews fetch complete' );
 		arsort( $results );
 		return $results;
@@ -204,9 +227,10 @@ The table below is the wikitext-table representation of the config used for gene
 	 *
 	 * @param $page string Page to set text for
 	 * @param $text string Text to set on the page
+	 * @param $section bool|int section to update on the page
 	 * @return array|\GuzzleHttp\Promise\PromiseInterface
 	 */
-	public function setText( $page, $text ) {
+	public function setText( $page, $text, $section = false ) {
 		$session = new MediawikiSession( $this->api );
 		$token = $session->getToken( 'edit' );
 		logToFile( 'Attempting to update wikipedia page' );
@@ -216,6 +240,9 @@ The table below is the wikitext-table representation of the config used for gene
 			'summary' => 'Popular pages report update. -- Community Tech bot',
 			'token' => $token
 		];
+		if ( $section ) {
+			$params['section'] = $section;
+		}
 		$result = $this->apiQuery( $params, 'edit', 'post' );
 		if ( $result ) {
 			logToFile( 'Page ' . $page . ' updated' );
@@ -305,7 +332,7 @@ The table below is the wikitext-table representation of the config used for gene
 
 	/**
 	 * Wrapper to make simple API query for JSON and in formatversion 2
-	 * @param $params string Params to add to the request
+	 * @param $params array Params to add to the request
 	 * @param $action string Query action
 	 * @param $method string Get/post
 	 * @param $async bool Pass 'true' to make asynchronous
