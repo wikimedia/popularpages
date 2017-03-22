@@ -1,4 +1,5 @@
 <?php
+
 // Simple helper functions for API interactions
 use Mediawiki\Api\MediawikiApi;
 use Mediawiki\Api\ApiUser;
@@ -68,6 +69,9 @@ class ApiHelper {
 	 * @return bool True if exists, else false
 	 */
 	public function doesListSectionExist( $title ) {
+		if ( !$this->doesTitleExist( $title ) ) {
+			return false;
+		}
 		$params = [ 'page' => $title,  'section' => 1 ];
 		$result = $this->apiQuery( $params, 'parse' );
 		if ( isset( $result['error'] ) ) {
