@@ -188,14 +188,7 @@ class ApiHelper {
 	 * @param $page string Page link
 	 */
 	public function updateIndex( $page ) {
-		$creds = parse_ini_file( 'config.ini' );
-		$link = mysqli_connect( $creds['dbhost'], $creds['dbuser'], $creds['dbpass'], $creds['dbname'] );
-		$query = "SELECT * FROM checklist";
-		$data = mysqli_query( $link, $query );
-		$config = $this->getJSONConfig();
-		$output = '';
-		if ( $data->num_rows > 0 ) {
-			$output .= '
+		$output = '
 The table below is the wikitext-table representation of the config used for generating Popular pages for wikiprojects. The actual config can be found at [[User:Community Tech bot/Popular pages config.json]].
 \'\'\'Please do not edit this page\'\'\'. All edits will be overwritten the next time bot updates this page.
 
@@ -208,22 +201,29 @@ The table below is the wikitext-table representation of the config used for gene
 !Limit
 !Updated on
 ';
-			while ( $row = $data->fetch_assoc() ) {
-				if ( $config["Wikipedia:WikiProject " . $row['project']] ) {
-					$config["Wikipedia:WikiProject " . $row['project']]['Updated'] = $row['updated'];
-				}
+		$projects = $this->getJSONConfig();
+		foreach ( $projects as $project => $info ) {
+			$params = [
+				'prop' => 'revisions',
+				'titles' => $info['Report'],
+				'rvprop' => 'timestamp',
+				'rvuser' => 'Community Tech bot',
+				'rvlimit' => 1
+			];
+			$res = $this->apiQuery( $params );
+			$timestamp = '';
+			if ( isset( $res['query']['pages'][0]['revisions'][0]['timestamp'] ) ) {
+				$timestamp = date( 'Y-m-d', strtotime( $res['query']['pages'][0]['revisions'][0]['timestamp'] ) );
 			}
-			foreach ( $config as $project => $info ) {
-				$output .= '
+			$output .= '
 |-
 |[[' . $project . ']]
 |[[' . $info['Report'] . ']]
 |' . $info['Limit'] . '
-|' . $info['Updated'] . '
+|' . $timestamp . '
 ';
-			}
-			$this->setText( $page, $output );
 		}
+		$this->setText( $page, $output );
 	}
 
 	/**
@@ -285,53 +285,33 @@ The table below is the wikitext-table representation of the config used for gene
 	}
 
 	/**
-	 * Get projects which have not been updated for current cycle
+	 * Get projects which have not been updated for current cycle using the API
 	 *
 	 * @return array List of projects which were updated more than 25 days ago from current date
 	 */
 	public function getStaleProjects() {
-		$creds = parse_ini_file( 'config.ini' );
-		$link = mysqli_connect( $creds['dbhost'], $creds['dbuser'], $creds['dbpass'], $creds['dbname'] );
-		$query = "SELECT * FROM checklist";
-		$data = mysqli_query( $link, $query );
-		$notUpdated = [];
-
-		if ( $data->num_rows > 0 ) {
-			while ( $row = $data->fetch_assoc() ) {
-				$project = $row['project'];
-				$lastUpdate = $row['updated'];
-				if ( !isset( $lastUpdate ) ) {
-					$notUpdated[] = $project;
-					continue;
-				} else {
-					$dateDiff = date_diff( new DateTime(), new DateTime( $lastUpdate ), true );
-					if ( (int)$dateDiff->format( '%d' ) > 25 ) {
-						// We found a project not updated for current month yet, add it to the array of projects not updated
-						$notUpdated[] = $project;
-					}
+		$staleProjects = [];
+		$projects = $this->getJSONConfig();
+		foreach ( $projects as $project => $info ) {
+			$params = [
+				'prop' => 'revisions',
+				'titles' => $info['Report'],
+				'rvprop' => 'timestamp',
+				'rvuser' => 'Community Tech bot',
+				'rvlimit' => 1
+			];
+			$res = $this->apiQuery( $params );
+			if ( isset( $res['query']['pages'][0]['revisions'][0]['timestamp'] ) ) {
+				$timestamp = $res['query']['pages'][0]['revisions'][0]['timestamp'];
+				// If the report is over 25 days old, we consider it to be stale
+				if ( date_diff( new DateTime( $timestamp ), new DateTime() )->format( '%d') > 25 ) {
+					$staleProjects[] = $info['Name'];
 				}
+			} else {
+				$staleProjects[] = $info['Name'];
 			}
 		}
-
-		return $notUpdated;
-	}
-
-	/**
-	 * Update timestamp of report update for a project in the DB
-	 *
-	 * @param $project string Project name to against timestamp against
-	 */
-	public function updateDB( $project ) {
-		$creds = parse_ini_file( 'config.ini' );
-		$link = mysqli_connect( $creds['dbhost'], $creds['dbuser'], $creds['dbpass'], $creds['dbname'] );
-		$date = date( 'Y-m-d' );
-		$query = "UPDATE checklist SET updated = '" . (string)$date . "' WHERE project = '" . $project ."'";
-		$res = mysqli_query( $link, $query );
-		if ( $res ) {
-			logToFile( 'Database updated' );
-		} else {
-			logToFile( 'Database update failed!' );
-		}
+		return $staleProjects;
 	}
 
 	/**

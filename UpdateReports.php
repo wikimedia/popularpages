@@ -4,6 +4,12 @@ class UpdateReports {
 
 	protected $api;
 
+	/**
+	 * UpdateReports constructor.
+	 * If a projects array is provided, the constructor fetches the config info for those projects and updates them
+	 *
+	 * @param null|array $projects List of projects to update
+	 */
 	public function __construct( $projects = null ) {
 		$this->api = new ApiHelper();
 		logToFile( 'Running new cycle. Fetching config.' );
@@ -19,6 +25,11 @@ class UpdateReports {
 		$this->updateReports( $config );
 	}
 
+	/**
+	 * Update popular pages reports. Primary execution point.
+	 *
+	 * @param $config array The JSON config from the wiki page
+	 */
 	public function updateReports( $config ) {
 		foreach ( $config as $project => $info ) {
 			logToFile( 'Beginning to process: ' . $project );
@@ -32,7 +43,7 @@ class UpdateReports {
 				logToFile( 'Incomplete data in config. Aborting.' );
 				continue;
 			}
-			$pages = $this->api->getProjectPages( $info['Name'] ); // Returns { \'title\' => array( \'class\' => \'\', \'importance\' => \'\' ),... }
+			$pages = $this->api->getProjectPages( $info['Name'] ); // Returns { 'title' => ['class'=>'', 'importance'=>''],...}
 			if ( empty( $pages ) ) {
 				continue;
 			}
@@ -91,8 +102,6 @@ Updated on: ~~~~~
 				// Update complete page
 				$this->api->setText( $info['Report'], $output );
 			}
-			// Update database for the project
-			$this->api->updateDB( $info['Name'] );
 			logToFile( 'Finished processing: ' . $project );
 		}
 		// Update index page
