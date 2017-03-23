@@ -15,6 +15,7 @@ class ApiHelper {
 
 	protected $api;
 	protected $user;
+	protected $creds;
 
 	/**
 	 * ApiHelper constructor.
@@ -24,6 +25,7 @@ class ApiHelper {
 	public function __construct( $apiurl = 'https://en.wikipedia.org/w/api.php' ) {
 		$this->api = MediawikiApi::newFromApiEndpoint( $apiurl );
 		$creds = parse_ini_file( 'config.ini' );
+		$this->creds = $creds;
 		$this->user = new ApiUser( $creds['botuser'], $creds['botpass'], $apiurl );
 		$this->api->login( $this->user );
 	}
@@ -207,7 +209,7 @@ The table below is the wikitext-table representation of the config used for gene
 				'prop' => 'revisions',
 				'titles' => $info['Report'],
 				'rvprop' => 'timestamp',
-				'rvuser' => 'Community Tech bot',
+				'rvuser' => $this->creds['botuser'],
 				'rvlimit' => 1
 			];
 			$res = $this->apiQuery( $params );
@@ -297,7 +299,7 @@ The table below is the wikitext-table representation of the config used for gene
 				'prop' => 'revisions',
 				'titles' => $info['Report'],
 				'rvprop' => 'timestamp',
-				'rvuser' => 'Community Tech bot',
+				'rvuser' => $this->creds['botuser'],
 				'rvlimit' => 1
 			];
 			$res = $this->apiQuery( $params );
