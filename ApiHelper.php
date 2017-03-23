@@ -65,7 +65,7 @@ class ApiHelper {
 	}
 
 	/**
-	 * Checks if the first section ("List" section) is present already in a page
+	 * Checks if the first section is present already in a page
 	 *
 	 * @param $title string The page title we're looking for first section in
 	 * @return bool True if exists, else false
@@ -74,10 +74,10 @@ class ApiHelper {
 		if ( !$this->doesTitleExist( $title ) ) {
 			return false;
 		}
-		$params = [ 'page' => $title,  'section' => 1 ];
+		$params = [ 'page' => $title,  'prop' => 'sections' ];
 		$result = $this->apiQuery( $params, 'parse' );
-		if ( isset( $result['error'] ) ) {
-			// We return false if we encountered an error
+		if ( !isset( $result['parse']['sections'][0] ) ) {
+			// We return false if we didn't fina any section
 			return false;
 		}
 		return true;
