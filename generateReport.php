@@ -20,6 +20,8 @@ if ( !isset( $argv[1] ) ) {
 	include_once 'vendor/autoload.php';
 
 	$api = new ApiHelper();
+	
+	logToFile( 'Running script to generate report for WikiProject ' . $argv[1] );
 
 	$project = [ $argv[1] ];
 

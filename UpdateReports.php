@@ -21,8 +21,12 @@ class UpdateReports {
 				}
 			}
 		}
-		logToFile( 'Number of projects pending update: ' . count( $config ) );
-		$this->updateReports( $config );
+		if ( $config ) {
+			logToFile( 'Number of projects pending update: ' . count( $config ) );
+			$this->updateReports( $config );
+		} else {
+			logToFile( 'No projects to update. Aborting.' );
+		}
 	}
 
 	/**
