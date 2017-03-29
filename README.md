@@ -1,5 +1,6 @@
 Popular Pages
 =============
+[![Build Status](https://travis-ci.org/wikimedia/popularpages.svg?branch=master)](https://travis-ci.org/wikimedia/popularpages)
 
 A tool for generating popular pages reports for WikiProjects.
 
