@@ -104,6 +104,7 @@ class ApiHelper {
 			logToFile( 'Zero pages found. Aborting!' );
 			return [];
 		}
+		// Loop through the pages and assessment information we got
 		foreach( $projects as $p ) {
 			if ( $p['ns'] === 0 ) {
 				$pages[$p['title']] = array(
@@ -112,6 +113,7 @@ class ApiHelper {
 				);
 			}
 		}
+		// Do any continuation queries that may be needed
 		while ( isset( $result['continue']['wppcontinue'] ) ) {
 			$params['wppcontinue'] = $result['continue']['wppcontinue'];
 			$result = $this->apiQuery( $params );
@@ -257,6 +259,7 @@ The table below is the wikitext-table representation of the config used for gene
 		}
 		return $result;
 	}
+
 
 	/**
 	 * Fetch JSON config from wiki config page
