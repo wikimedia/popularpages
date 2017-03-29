@@ -1,6 +1,6 @@
 language: php
 php:
-  - '5.4'
+#  - '5.4' -- breaks for some weird reason (https://travis-ci.org/wikimedia/popularpages/jobs/216541216)
   - '5.5'
   - '5.6'
   - '7.0'

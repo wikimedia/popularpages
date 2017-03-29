@@ -80,7 +80,6 @@ class ApiHelperTest extends \PHPUnit_Framework_TestCase {
 	 */
 	public function testSetText() {
 		$result = $this->apiHelper->setText( 'User:NKohli (WMF)/sandbox', 'Hi there! This is a test' );
-		var_dump( $result );
 		$this->assertEquals( $result['edit']['result'], "Success" );
 	}
 }
