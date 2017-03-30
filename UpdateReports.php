@@ -54,6 +54,8 @@ class UpdateReports {
 			$start = strtotime( 'first day of previous month' );
 			$end = strtotime( 'last day of previous month' );
 			$views = $this->api->getMonthlyPageviews( array_keys( $pages ), date( 'Ymd00', $start ), date( 'Ymd00', $end ) );
+			// Compute total views for the month
+			$totalViews = array_sum( array_values( $views ) );
 			$views = array_slice( $views, 0, $info['Limit'], true );
 			$hasListSection = $this->api->doesListSectionExist( $info['Report'] );
 			$output = '';
@@ -69,6 +71,7 @@ To report bugs, please write on the [[meta:User_talk:Community_Tech_bot| Communi
 			}
 			$output .=
 'Period: ' . date( 'Y-m-d', $start ) . ' to ' . date( 'Y-m-d', $end ) . '.
+Total views: {{formatnum:' . $totalViews . '}}
 
 Updated on: ~~~~~
 
