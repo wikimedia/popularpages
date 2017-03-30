@@ -6,3 +6,5 @@ php:
   - '7.0'
 before_install:
   - openssl aes-256-cbc -K $encrypted_3aebaad84201_key -iv $encrypted_3aebaad84201_iv -in config.ini.enc -out config.ini -d
+install:
+  - composer install
