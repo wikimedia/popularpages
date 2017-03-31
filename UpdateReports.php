@@ -70,6 +70,7 @@ To report bugs, please write on the [[meta:User_talk:Community_Tech_bot| Communi
 ';
 			}
 			$output .=
+"<!-- Changes made below this line will be overwritten on the next update. -->\n" .
 'Period: ' . date( 'Y-m-d', $start ) . ' to ' . date( 'Y-m-d', $end ) . '.
 Total views: {{formatnum:' . $totalViews . '}}
 
