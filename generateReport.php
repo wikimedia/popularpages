@@ -21,7 +21,7 @@ if ( !isset( $argv[1] ) ) {
 
 	$api = new ApiHelper();
 	
-	logToFile( 'Running script to generate report for WikiProject ' . $argv[1] );
+	logToFile( 'Running script to generate report for project ' . $argv[1] );
 
 	$project = [ $argv[1] ];
 
