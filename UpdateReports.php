@@ -64,12 +64,12 @@ class UpdateReports {
 				$output .= '
 This is a list of pages in the scope of [[' . $project . ']] along with pageviews.
 
-To report bugs, please write on the [[meta:User_talk:Community_Tech_bot| Community tech bot]] talk page on Meta.
+To report bugs, please write on the [[meta:User_talk:Community_Tech_bot|Community tech bot]] talk page on Meta.
 
-== List ==
 ';
 			}
 			$output .=
+"== List ==\n" .
 "<!-- Changes made below this line will be overwritten on the next update. -->\n" .
 'Period: ' . date( 'Y-m-d', $start ) . ' to ' . date( 'Y-m-d', $end ) . '.
 Total views: {{formatnum:' . $totalViews . '}}
