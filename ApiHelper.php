@@ -155,7 +155,7 @@ class ApiHelper {
 			// Get monthly pageviews for all of the titles i.e. original page and its redirects
 			foreach ( $titles as $title ) {
 				$url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/' . rawurlencode( $title ) . '/monthly/' . $start . '/' . $end;
-				$result = json_decode( file_get_contents( $url ), true );
+				$result = json_decode( @file_get_contents( $url ), true );
 				if ( isset( $result['items'] ) ) {
 					$results[$page] += (int)$result['items'][0]['views'];
 				} else {
