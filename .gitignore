@@ -1,4 +1,3 @@
-/vendor
 /config.inc.php
 /tests/config.inc.php
 /.idea
@@ -8,3 +7,4 @@ config.ini
 nopageviewdata.txt
 /scripts
 log.txt
+/vendor

@@ -33,6 +33,8 @@ class UpdateReports {
 	 * Update popular pages reports. Primary execution point.
 	 *
 	 * @param $config array The JSON config from the wiki page
+	 * @param $start string Start timestamp to test against (ideally only used in test mode)
+	 * @param $end string End timestamp to test against (ideally only used in test mode)
 	 */
 	public function updateReports( $config ) {
 		foreach ( $config as $project => $info ) {
@@ -51,6 +53,7 @@ class UpdateReports {
 			if ( empty( $pages ) ) {
 				continue;
 			}
+			// Get dates for last month
 			$start = strtotime( 'first day of previous month' );
 			$end = strtotime( 'last day of previous month' );
 			$views = $this->api->getMonthlyPageviews( array_keys( $pages ), date( 'Ymd00', $start ), date( 'Ymd00', $end ) );
