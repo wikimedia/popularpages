@@ -245,7 +245,7 @@ The table below is the wikitext-table representation of the config used for gene
 		$params = [
 			'title' => $page,
 			'text' => $text,
-			'summary' => 'Popular pages report update. -- Community Tech bot',
+			'summary' => 'Popular pages report update',
 			'token' => $token
 		];
 		if ( $section ) {
