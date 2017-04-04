@@ -33,8 +33,6 @@ class UpdateReports {
 	 * Update popular pages reports. Primary execution point.
 	 *
 	 * @param $config array The JSON config from the wiki page
-	 * @param $start string Start timestamp to test against (ideally only used in test mode)
-	 * @param $end string End timestamp to test against (ideally only used in test mode)
 	 */
 	public function updateReports( $config ) {
 		foreach ( $config as $project => $info ) {
