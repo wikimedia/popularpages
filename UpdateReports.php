@@ -32,7 +32,7 @@ class UpdateReports {
 	/**
 	 * Update popular pages reports. Primary execution point.
 	 *
-	 * @param $config array The JSON config from the wiki page
+	 * @param array $config The JSON config from the wiki page
 	 */
 	public function updateReports( $config ) {
 		foreach ( $config as $project => $info ) {
