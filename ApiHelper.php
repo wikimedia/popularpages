@@ -105,7 +105,7 @@ class ApiHelper {
 			return [];
 		}
 		// Loop through the pages and assessment information we got
-		foreach( $projects as $p ) {
+		foreach ( $projects as $p ) {
 			if ( $p['ns'] === 0 ) {
 				$pages[$p['title']] = array(
 					'class' => $p['assessment']['class'],
@@ -118,7 +118,7 @@ class ApiHelper {
 			$params['wppcontinue'] = $result['continue']['wppcontinue'];
 			$result = $this->apiQuery( $params );
 			$projects = $result['query']['projects'][$project];
-			foreach( $projects as $p ) {
+			foreach ( $projects as $p ) {
 				if ( $p['ns'] === 0 ) {
 					$pages[$p['title']] = array(
 						'class' => $p['assessment']['class'],
@@ -127,7 +127,7 @@ class ApiHelper {
 				}
 			}
 		}
-		logToFile( 'Total number of pages fetched: '. count( $pages ) );
+		logToFile( 'Total number of pages fetched: ' . count( $pages ) );
 		return $pages;
 	}
 
@@ -309,7 +309,7 @@ The table below is the wikitext-table representation of the config used for gene
 			if ( isset( $res['query']['pages'][0]['revisions'][0]['timestamp'] ) ) {
 				$timestamp = $res['query']['pages'][0]['revisions'][0]['timestamp'];
 				// If the report is over 25 days old, we consider it to be stale
-				if ( date_diff( new DateTime( $timestamp ), new DateTime() )->format( '%d') > 25 ) {
+				if ( date_diff( new DateTime( $timestamp ), new DateTime() )->format( '%d' ) > 25 ) {
 					$staleProjects[] = $info['Name'];
 				}
 			} else {
