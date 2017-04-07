@@ -9,4 +9,13 @@ include_once 'vendor/autoload.php';
 
 date_default_timezone_set( 'UTC' );
 
-$start = new UpdateReports();
+$api = new ApiHelper();
+
+logToFile( 'Beginning new cycle' );
+
+$notUpdated = $api->getStaleProjects();
+
+logToFile( 'Number of projects pending update: ' . count( $notUpdated ) );
+
+// Instantiate a new UpdateReport with projects not updated yet
+new UpdateReports( $notUpdated );
