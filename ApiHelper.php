@@ -20,7 +20,7 @@ class ApiHelper {
 	/**
 	 * ApiHelper constructor.
 	 *
-	 * @param $apiurl string Url to build the Api endpoint and do all further queries against
+	 * @param string $apiurl Url to build the Api endpoint and do all further queries against
 	 */
 	public function __construct( $apiurl = 'https://en.wikipedia.org/w/api.php' ) {
 		$this->api = MediawikiApi::newFromApiEndpoint( $apiurl );
@@ -33,7 +33,7 @@ class ApiHelper {
 	/**
 	 * Fetch projects from the PageAssessments database
 	 *
-	 * @param $limit int Number of projects to fetch
+	 * @param int $limit Number of projects to fetch
 	 * @return array Projects
 	 */
 	public function getProjects( $limit = 5000 ) {
@@ -50,7 +50,7 @@ class ApiHelper {
 	/**
 	 * Check if a given title exists on wikipedia
 	 *
-	 * @param $title string Title to check existence for
+	 * @param string $title Title to check existence for
 	 * @return bool True if title exists else false
 	 */
 	public function doesTitleExist( $title ) {
@@ -67,7 +67,7 @@ class ApiHelper {
 	/**
 	 * Checks if the first section is present already in a page
 	 *
-	 * @param $title string The page title we're looking for first section in
+	 * @param string $title The page title we're looking for first section in
 	 * @return bool True if exists, else false
 	 */
 	public function doesListSectionExist( $title ) {
@@ -86,7 +86,7 @@ class ApiHelper {
 	/**
 	 * Get project titles & assessments for all pages in a wikiproject
 	 *
-	 * @param $project
+	 * @param string $project Name of the project, i.e. 'Medicine'
 	 * @return array
 	 */
 	public function getProjectPages( $project ) {
@@ -105,7 +105,7 @@ class ApiHelper {
 			return [];
 		}
 		// Loop through the pages and assessment information we got
-		foreach( $projects as $p ) {
+		foreach ( $projects as $p ) {
 			if ( $p['ns'] === 0 ) {
 				$pages[$p['title']] = array(
 					'class' => $p['assessment']['class'],
@@ -118,7 +118,7 @@ class ApiHelper {
 			$params['wppcontinue'] = $result['continue']['wppcontinue'];
 			$result = $this->apiQuery( $params );
 			$projects = $result['query']['projects'][$project];
-			foreach( $projects as $p ) {
+			foreach ( $projects as $p ) {
 				if ( $p['ns'] === 0 ) {
 					$pages[$p['title']] = array(
 						'class' => $p['assessment']['class'],
@@ -127,16 +127,16 @@ class ApiHelper {
 				}
 			}
 		}
-		logToFile( 'Total number of pages fetched: '. count( $pages ) );
+		logToFile( 'Total number of pages fetched: ' . count( $pages ) );
 		return $pages;
 	}
 
 	/**
 	 * Get monthly pageviews for given page and its redirects between gives dates
 	 *
-	 * @param $pages array of pages to fetch pageviews for
-	 * @param $start string Query datetime start string
-	 * @param $end string Query datetime end string
+	 * @param array $pages of pages to fetch pageviews for
+	 * @param string $start Query datetime start string
+	 * @param string $end Query datetime end string
 	 * @return array|int
 	 */
 	public function getMonthlyPageviews( $pages, $start, $end ) {
@@ -157,7 +157,7 @@ class ApiHelper {
 			// Get monthly pageviews for all of the titles i.e. original page and its redirects
 			foreach ( $titles as $title ) {
 				$url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/' . rawurlencode( $title ) . '/monthly/' . $start . '/' . $end;
-				$result = json_decode( file_get_contents( $url ), true );
+				$result = json_decode( @file_get_contents( $url ), true );
 				if ( isset( $result['items'] ) ) {
 					$results[$page] += (int)$result['items'][0]['views'];
 				} else {
@@ -189,7 +189,7 @@ class ApiHelper {
 	/**
 	 * Update index page for the bot, showing last update timestamps and projects
 	 *
-	 * @param $page string Page link
+	 * @param string $page Page link
 	 */
 	public function updateIndex( $page ) {
 		$output = '
@@ -233,9 +233,9 @@ The table below is the wikitext-table representation of the config used for gene
 	/**
 	 * Update a wikipedia page with the given text
 	 *
-	 * @param $page string Page to set text for
-	 * @param $text string Text to set on the page
-	 * @param $section bool|int section to update on the page
+	 * @param string $page Page to set text for
+	 * @param string $text Text to set on the page
+	 * @param bool|int $section section to update on the page
 	 * @return array|\GuzzleHttp\Promise\PromiseInterface
 	 */
 	public function setText( $page, $text, $section = false ) {
@@ -245,7 +245,7 @@ The table below is the wikitext-table representation of the config used for gene
 		$params = [
 			'title' => $page,
 			'text' => $text,
-			'summary' => 'Popular pages report update. -- Community Tech bot',
+			'summary' => 'Popular pages report update',
 			'token' => $token
 		];
 		if ( $section ) {
@@ -264,7 +264,7 @@ The table below is the wikitext-table representation of the config used for gene
 	/**
 	 * Fetch JSON config from wiki config page
 	 *
-	 * @param $page string Wikipedia page title to fetch config from
+	 * @param string $page Wikipedia page title to fetch config from
 	 * @return array Config data
 	 */
 	public function getJSONConfig( $page = 'User:Community Tech bot/Popular pages config.json' ) {
@@ -319,10 +319,10 @@ The table below is the wikitext-table representation of the config used for gene
 
 	/**
 	 * Wrapper to make simple API query for JSON and in formatversion 2
-	 * @param $params array Params to add to the request
-	 * @param $action string Query action
-	 * @param $method string Get/post
-	 * @param $async bool Pass 'true' to make asynchronous
+	 * @param array $params Params to add to the request
+	 * @param string $action Query action
+	 * @param string $method Get/post
+	 * @param bool $async Pass 'true' to make asynchronous
 	 * @return GuzzleHttp\Promise\PromiseInterface|array Promise if $async is true,
 	 *   otherwise the API result in the form of an array
 	 */

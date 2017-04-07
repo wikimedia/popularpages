@@ -17,9 +17,7 @@ class UpdateReports {
 	/**
 	 * Update popular pages reports. Primary execution point.
 	 *
-	 * @param $config array The JSON config from the wiki page
-	 * @param $start string Start timestamp to test against (ideally only used in test mode)
-	 * @param $end string End timestamp to test against (ideally only used in test mode)
+	 * @param array $config The JSON config from the wiki page
 	 */
 	public function updateReports( $config ) {
 		foreach ( $config as $project => $info ) {
@@ -42,6 +40,8 @@ class UpdateReports {
 			$start = strtotime( 'first day of previous month' );
 			$end = strtotime( 'last day of previous month' );
 			$views = $this->api->getMonthlyPageviews( array_keys( $pages ), date( 'Ymd00', $start ), date( 'Ymd00', $end ) );
+			// Compute total views for the month
+			$totalViews = array_sum( array_values( $views ) );
 			$views = array_slice( $views, 0, $info['Limit'], true );
 			$hasListSection = $this->api->doesListSectionExist( $info['Report'] );
 			$output = '';
@@ -50,13 +50,15 @@ class UpdateReports {
 				$output .= '
 This is a list of pages in the scope of [[' . $project . ']] along with pageviews.
 
-To report bugs, please write on the [[meta:User_talk:Community_Tech_bot| Community tech bot]] talk page on Meta.
+To report bugs, please write on the [[meta:User_talk:Community_Tech_bot|Community tech bot]] talk page on Meta.
 
-== List ==
 ';
 			}
 			$output .=
+"== List ==\n" .
+"<!-- Changes made below this line will be overwritten on the next update. -->\n" .
 'Period: ' . date( 'Y-m-d', $start ) . ' to ' . date( 'Y-m-d', $end ) . '.
+Total views: {{formatnum:' . $totalViews . '}}
 
 Updated on: ~~~~~
 
