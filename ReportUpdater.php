@@ -1,17 +1,17 @@
 <?php
 
-class UpdateReports {
+class ReportUpdater {
 
 	protected $api;
 
 	/**
-	 * UpdateReports constructor.
+	 * ReportUpdater constructor.
 	 * If a projects array is provided, the constructor fetches the config info for those projects and updates them
 	 *
 	 * @param null|array $projects List of projects to update
 	 */
-	public function __construct( $projects = null ) {
-		$this->updateReports( $projects );
+	public function __construct() {
+		$this->api = new ApiHelper();
 	}
 
 	/**

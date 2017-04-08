@@ -12,10 +12,9 @@ See [the tool's homepage](https://wikitech.wikimedia.org/wiki/Tool:Popular_Pages
 * Update [the info page on wiki](https://en.wikipedia.org/wiki/User:Community_Tech_bot/Popular_pages) with the timestamp of page update.
 
 ##### App structure:
-* **`checkReports.php`**: Starting point for a new bot run. Updates all projects irrespective of last update timestamp.
-* **`recheckReports.php`**: Starting point for running a subsequent bot run, to cover any projects that were not updated in the initial bot run. It gets an array of all projects not already updated for past month and then passes it to `UpdateReports.php`.
-* **`UpdateReports.php`**: The file that actually updates projects. Takes list of projects to update as an optional param, else updates all projects.
-* **`ApiHelper.php`**: Contains all helper functions for dealing with the Api and Database (bit of a misnomer).
+* **`checkReports.php`**: Starting point for a new bot run. Gets config info for all projects not already updated for past month and then passes it to `ReportUpdater`.
+* **`ReportUpdater.php`**: The file that actually updates projects.
+* **`ApiHelper.php`**: Contains all helper functions for dealing with the API and Database (bit of a misnomer).
 * **`Logger.php`**: Responsible for logging updates to `log.txt`.
 * **`generateReport.php`**: Script to manually regenerate a report for a single project.
 * **`generateIndex.php`**: Script for generating the index page.

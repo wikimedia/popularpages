@@ -16,7 +16,7 @@
 		"files": [
 			"Logger.php",
 			"ApiHelper.php",
-			"UpdateReports.php"
+			"ReportUpdater.php"
 		]
 	},
 	"autoload-dev": {

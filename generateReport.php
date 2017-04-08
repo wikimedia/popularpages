@@ -25,6 +25,7 @@ if ( !isset( $argv[1] ) ) {
 
 	$project = [ $argv[1] ];
 
-	// Instantiate a new UpdateReport with the specified project
-	new UpdateReports( $project );
+	// Instantiate a new ReportUpdater with the specified project
+	$updater = new ReportUpdater( $project );
+	$updater->updateReports( $project );
 }

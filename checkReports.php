@@ -17,5 +17,6 @@ $notUpdated = $api->getStaleProjects();
 
 logToFile( 'Number of projects pending update: ' . count( $notUpdated ) );
 
-// Instantiate a new UpdateReport with projects not updated yet
-new UpdateReports( $notUpdated );
+// Instantiate a new ReportUpdater with projects not updated yet
+$updater = new ReportUpdater();
+$updater->updateReports( $notUpdated );
