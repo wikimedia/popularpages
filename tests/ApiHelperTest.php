@@ -15,18 +15,6 @@ class ApiHelperTest extends \PHPUnit_Framework_TestCase {
 	}
 
 	/**
-	 * Test the getProjects function
-	 * Check we get back 2000 projects when we ask for 2000 and check for presence
-	 * of two key projects 'Medicine' and 'Disney'
-	 */
-	public function testGetProjects() {
-		$projects = $this->apiHelper->getProjects( 2000 );
-		$this->assertCount( 2000, $projects );
-		$this->assertContains( 'Medicine', $projects );
-		$this->assertContains( 'Disney', $projects );
-	}
-
-	/**
 	 * Test the doesTitleExist function
 	 */
 	public function testDoesTitleExist() {

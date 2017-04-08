@@ -31,23 +31,6 @@ class ApiHelper {
 	}
 
 	/**
-	 * Fetch projects from the PageAssessments database
-	 *
-	 * @param int $limit Number of projects to fetch
-	 * @return array Projects
-	 */
-	public function getProjects( $limit = 5000 ) {
-		logToFile( 'Fetching projects list' );
-		$params = [
-			'list' => 'projects',
-			'pjsubprojects' => 'true'
-		];
-		$result = $this->apiQuery( $params );
-		// Chop off the array to required limits
-		return array_slice( $result['query']['projects'], 0, $limit );
-	}
-
-	/**
 	 * Check if a given title exists on wikipedia
 	 *
 	 * @param string $title Title to check existence for
