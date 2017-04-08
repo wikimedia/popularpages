@@ -98,12 +98,13 @@ class ApiHelper {
 			'wppassessments' => true
 		];
 		$result = $this->apiQuery( $params );
-		$projects = $result['query']['projects'][$project];
-		$pages = [];
-		if ( !$projects ) {
-			logToFile( 'Zero pages found. Aborting!' );
+		if ( isset( $result['query']['projects'][$project] ) ) {
+			$projects = $result['query']['projects'][$project];
+		} else {
+			logToFile( 'Project or project pages not found. Aborting!' );
 			return [];
 		}
+		$pages = [];
 		// Loop through the pages and assessment information we got
 		foreach ( $projects as $p ) {
 			if ( $p['ns'] === 0 ) {
