@@ -11,22 +11,7 @@ class UpdateReports {
 	 * @param null|array $projects List of projects to update
 	 */
 	public function __construct( $projects = null ) {
-		$this->api = new ApiHelper();
-		logToFile( 'Running new cycle. Fetching config.' );
-		$config = $this->api->getJSONConfig();
-		if ( isset( $projects ) ) {
-			foreach ( $config as $project => $info ) {
-				if ( !in_array( $info['Name'], $projects ) ) {
-					unset( $config[$project] ); // Only keep projects we need
-				}
-			}
-		}
-		if ( $config ) {
-			logToFile( 'Number of projects pending update: ' . count( $config ) );
-			$this->updateReports( $config );
-		} else {
-			logToFile( 'No projects to update. Aborting.' );
-		}
+		$this->updateReports( $projects );
 	}
 
 	/**

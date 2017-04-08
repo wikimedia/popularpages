@@ -293,12 +293,11 @@ The table below is the wikitext-table representation of the config used for gene
 	/**
 	 * Get projects which have not been updated for current cycle using the API
 	 *
-	 * @return array List of projects which were updated more than 25 days ago from current date
+	 * @return array Config for projects which were not updated in the current month
 	 */
 	public function getStaleProjects() {
-		$staleProjects = [];
-		$projects = $this->getJSONConfig();
-		foreach ( $projects as $project => $info ) {
+		$config = $this->getJSONConfig();
+		foreach ( $config as $project => $info ) {
 			$params = [
 				'prop' => 'revisions',
 				'titles' => $info['Report'],
@@ -309,15 +308,14 @@ The table below is the wikitext-table representation of the config used for gene
 			$res = $this->apiQuery( $params );
 			if ( isset( $res['query']['pages'][0]['revisions'][0]['timestamp'] ) ) {
 				$timestamp = $res['query']['pages'][0]['revisions'][0]['timestamp'];
-				// If the report is over 25 days old, we consider it to be stale
-				if ( date_diff( new DateTime( $timestamp ), new DateTime() )->format( '%d' ) > 25 ) {
-					$staleProjects[] = $info['Name'];
+				$rmonth = date( "F", strtotime( $timestamp ) );
+				$cmonth = date( "F" );
+				if ( $rmonth === $cmonth ) {
+					unset( $config[$project] ); // If report was generated in the same month, skip it
 				}
-			} else {
-				$staleProjects[] = $info['Name'];
 			}
 		}
-		return $staleProjects;
+		return $config;
 	}
 
 	/**
