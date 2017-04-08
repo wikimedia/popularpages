@@ -23,9 +23,9 @@ if ( !isset( $argv[1] ) ) {
 	
 	logToFile( 'Running script to generate report for project ' . $argv[1] );
 
-	$project = [ $argv[1] ];
+	$projectConfig = $api->getProject( $argv[1] );
 
 	// Instantiate a new ReportUpdater with the specified project
-	$updater = new ReportUpdater( $project );
-	$updater->updateReports( $project );
+	$updater = new ReportUpdater();
+	$updater->updateReports( $projectConfig );
 }

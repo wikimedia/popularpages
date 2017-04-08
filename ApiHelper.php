@@ -302,6 +302,22 @@ The table below is the wikitext-table representation of the config used for gene
 	}
 
 	/**
+	 * Get config for a single project
+	 * @param string $projectName Name of project as specified in Name parameter
+	 *     of JSON config
+	 * @return array|null Config for a single project or null if project not found
+	 */
+	public function getProject( $projectName ) {
+		$config = $this->getJSONConfig();
+		foreach ( $config as $project => $info ) {
+			if ( $info['Name'] === $projectName ) {
+				return array( $project => $info );
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Wrapper to make simple API query for JSON and in formatversion 2
 	 * @param array $params Params to add to the request
 	 * @param string $action Query action

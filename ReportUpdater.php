@@ -21,15 +21,15 @@ class ReportUpdater {
 	 */
 	public function updateReports( $config ) {
 		foreach ( $config as $project => $info ) {
-			logToFile( 'Beginning to process: ' . $project );
-			// Check the project exists
-			if ( !$this->api->doesTitleExist( $project ) ) {
-				logToFile( 'Error: Project page for ' . $project . ' does not exist!' );
-				continue;
-			}
 			// Check config is not empty
 			if ( !isset( $info['Name'] ) || !isset( $info['Limit'] ) || !isset( $info['Report'] ) ) {
-				logToFile( 'Incomplete data in config. Aborting.' );
+				logToFile( 'Error: Incomplete data in config for ' . $project . '. Skipping.' );
+				continue;
+			}
+			logToFile( 'Beginning to process: ' . $info['Name'] );
+			// Check the project exists
+			if ( !$this->api->doesTitleExist( $project ) ) {
+				logToFile( 'Error: Project page for ' . $info['Name'] . ' does not exist! Skipping.' );
 				continue;
 			}
 			$pages = $this->api->getProjectPages( $info['Name'] ); // Returns { 'title' => ['class'=>'', 'importance'=>''],...}
