@@ -96,7 +96,7 @@ Updated on: ~~~~~
 				// Update complete page
 				$this->api->setText( $info['Report'], $output );
 			}
-			logToFile( 'Finished processing: ' . $project );
+			logToFile( 'Finished processing: ' . $info['Name'] );
 		}
 		// Update index page
 		$this->api->updateIndex( 'User:Community Tech bot/Popular pages' );
