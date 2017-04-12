@@ -20,8 +20,13 @@ class ReportUpdater {
 	 * @param array $config The JSON config from the wiki page
 	 */
 	public function updateReports( $config ) {
+		// Make sure config isn't empty
+		if ( !is_array( $config ) || count( $config ) < 1 ) {
+			logToFile( 'Error: Invalid config. Aborting!' );
+			return;
+		}
 		foreach ( $config as $project => $info ) {
-			// Check config is not empty
+			// Check that config values are set
 			if ( !isset( $info['Name'] ) || !isset( $info['Limit'] ) || !isset( $info['Report'] ) ) {
 				logToFile( 'Error: Incomplete data in config for ' . $project . '. Skipping.' );
 				continue;
