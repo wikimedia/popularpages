@@ -146,9 +146,11 @@ class ApiHelper {
 					$results[$page] += (int)$result['items'][0]['views'];
 				} else {
 					// Report missing data
+					/*
 					$file = fopen( 'nopageviewdata.txt', 'a' );
 					$output = date( 'Y-m-d H:i:s' ) . '  ' . $url;
 					fwrite( $file, $output . PHP_EOL );
+					*/
 				}
 				// Throttling purposes
 				$lim--;
