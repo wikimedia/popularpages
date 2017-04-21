@@ -333,6 +333,7 @@ The table below is the wikitext-table representation of the config used for gene
 		foreach ( $params as $param => $value ) {
 			$factory->setParam( $param, $value );
 		}
+		$res = null;
 		if ( $method == 'get' ) {
 			if ( $async ) {
 				try {
@@ -367,6 +368,7 @@ The table below is the wikitext-table representation of the config used for gene
 				}
 			}
 		}
+		return $res;
 	}
 
 }
