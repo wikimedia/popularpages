@@ -2,17 +2,18 @@ Popular Pages
 =============
 [![Build Status](https://travis-ci.org/wikimedia/popularpages.svg?branch=master)](https://travis-ci.org/wikimedia/popularpages)
 
-A tool for generating popular pages reports for WikiProjects.
+A tool for generating monthly popular pages reports for WikiProjects.
 
 See [the tool's homepage](https://wikitech.wikimedia.org/wiki/Tool:Popular_Pages) for more information.
 
 ##### Setting up the bot
 * Add the bot's username and password to the `config.ini.example` file and rename it `config.ini`.
 * Run `composer install` from the command line.
+* Either run the bot manually or set up a cron job to run it once a month.
 
 ##### How does the bot work?
 * Fetches config from [on wiki config page](https://en.wikipedia.org/wiki/User:Community_Tech_bot/Popular_pages_config.json).
-* Runs on all of the projects listed in the config. The bot completes a run once every month.
+* Runs on all of the projects listed in the config, compiling pageview statistics for the previous month.
 * Updates [the info page on wiki](https://en.wikipedia.org/wiki/User:Community_Tech_bot/Popular_pages) with the timestamp of page update.
 
 ##### App structure:
