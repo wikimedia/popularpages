@@ -335,19 +335,42 @@ The table below is the wikitext-table representation of the config used for gene
 		foreach ( $params as $param => $value ) {
 			$factory->setParam( $param, $value );
 		}
+		$res = null;
 		if ( $method == 'get' ) {
 			if ( $async ) {
-				return $this->api->getRequestAsync( $factory );
+				try {
+					$res = $this->api->getRequestAsync( $factory );
+				} catch ( Exception $e ) {
+					//Uh oh, we got an exception, let's log it and retry
+					logToFile( 'Exception caught during API request: ' . $e->getMessage() );
+					$res = $this->api->getRequestAsync( $factory );
+				}
 			} else {
-				return $this->api->getRequest( $factory );
+				try {
+					$res = $this->api->getRequest( $factory );
+				} catch ( Exception $e ) {
+					logToFile( 'Exception caught during API request: ' . $e->getMessage() );
+					$res = $this->api->getRequest( $factory );
+				}
 			}
 		} else {
 			if ( $async ) {
-				return $this->api->postRequestAsync( $factory );
+				try {
+					$res = $this->api->postRequestAsync( $factory );
+				} catch ( Exception $e ) {
+					logToFile( 'Exception caught during API request: ' . $e->getMessage() );
+					$res = $this->api->postRequestAsync( $factory );
+				}
 			} else {
-				return $this->api->postRequest( $factory );
+				try {
+					$res = $this->api->postRequest( $factory );
+				} catch ( Exception $e ) {
+					logToFile( 'Exception caught during API request: ' . $e->getMessage() );
+					$res = $this->api->postRequest( $factory );
+				}
 			}
 		}
+		return $res;
 	}
 
 }
