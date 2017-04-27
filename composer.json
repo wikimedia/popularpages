@@ -5,7 +5,7 @@
 	"homepage": "https://wikitech.wikimedia.org/wiki/Tool:Popular_Pages",
 	"require": {
 		"php" : ">=5.5.9",
-		"addwiki/mediawiki-api-base": "^2.2"
+		"addwiki/mediawiki-api-base": "^2.3"
 	},
 	"require-dev": {
 		"mediawiki/mediawiki-codesniffer": "^0.7",
