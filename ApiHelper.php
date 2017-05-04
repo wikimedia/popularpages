@@ -127,6 +127,7 @@ class ApiHelper {
 		logToFile( 'Fetching monthly pageviews' );
 		$client = new \GuzzleHttp\Client(); // Client for our promises
 		$results = [];
+		$errors = 0;
 		foreach ( $pages as $page ) {
 			$results[$page] = 0; // Initialize with 0 views
 			// Get redirects
@@ -149,12 +150,14 @@ class ApiHelper {
 				$responses = GuzzleHttp\Promise\settle( $promises )->wait();
 			} catch ( Exception $e ) {
 				// Ignore since we are logging those below anyway.
+				$errors++; // Increment error count
 			}
 			foreach ( $responses as $response ) {
 				if ( $response['state'] !== 'fulfilled' ) {
 					$file = fopen( 'nopageviewdata.txt', 'a' );
 					$output = date( 'Y-m-d H:i:s' ) . '  ' . $url;
 					fwrite( $file, $output . PHP_EOL );
+					$errors++;
 				} else {
 					$result = $response['value'];
 					$result = json_decode( $result->getBody()->getContents(), true );
@@ -164,7 +167,7 @@ class ApiHelper {
 				}
 			}
 		}
-		logToFile( 'Pageviews fetch complete' );
+		logToFile( 'Pageviews fetch complete with ' . $errors . ' errors.' );
 		arsort( $results );
 		return $results;
 	}
