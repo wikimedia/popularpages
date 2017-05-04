@@ -125,8 +125,8 @@ class ApiHelper {
 	 */
 	public function getMonthlyPageviews( $pages, $start, $end ) {
 		logToFile( 'Fetching monthly pageviews' );
+		$client = new \GuzzleHttp\Client(); // Client for our promises
 		$results = [];
-		$lim = 99;
 		foreach ( $pages as $page ) {
 			$results[$page] = 0; // Initialize with 0 views
 			// Get redirects
@@ -138,35 +138,32 @@ class ApiHelper {
 					$titles[] = $r['title'];
 				}
 			}
-			// Get monthly pageviews for all of the titles i.e. original page and its redirects
+			// Get monthly pageviews for all of the titles i.e. original page and its redirects using promises
+			$promises = [];
 			foreach ( $titles as $title ) {
 				$url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/' . rawurlencode( $title ) . '/monthly/' . $start . '/' . $end;
-				$result = json_decode( @file_get_contents( $url ), true );
-				if ( isset( $result['items'] ) ) {
-					$results[$page] += (int)$result['items'][0]['views'];
-				} else {
-					// Report missing data
-					/*
+				$promise = $client->getAsync( $url );
+				$promises[] = $promise; // Add the promise for each request to promises array
+			}
+			try {
+				$responses = GuzzleHttp\Promise\settle( $promises )->wait();
+			} catch ( Exception $e ) {
+				// Ignore since we are logging those below anyway.
+			}
+			foreach ( $responses as $response ) {
+				if ( $response['state'] !== 'fulfilled' ) {
 					$file = fopen( 'nopageviewdata.txt', 'a' );
 					$output = date( 'Y-m-d H:i:s' ) . '  ' . $url;
 					fwrite( $file, $output . PHP_EOL );
-					*/
+				} else {
+					$result = $response['value'];
+					$result = json_decode( $result->getBody()->getContents(), true );
+					if ( $result ) {
+						$results[$page] += (int)$result['items'][0]['views'];
+					}
 				}
-				// Throttling purposes
-				$lim--;
-				if ( $lim == 0 ) {
-					usleep( 10000 );
-					$lim = 99;
-				}
-			}
-			// Throttling purposes
-			$lim--;
-			if ( $lim == 0 ) {
-				usleep( 10000 );
-				$lim = 99;
 			}
 		}
-
 		logToFile( 'Pageviews fetch complete' );
 		arsort( $results );
 		return $results;
