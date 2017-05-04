@@ -158,7 +158,7 @@ class ApiHelper {
 				} else {
 					$result = $response['value'];
 					$result = json_decode( $result->getBody()->getContents(), true );
-					if ( $result ) {
+					if ( $result && isset( $result['items'][0]['views'] ) ) {
 						$results[$page] += (int)$result['items'][0]['views'];
 					}
 				}
