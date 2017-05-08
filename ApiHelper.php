@@ -14,6 +14,7 @@ use GuzzleHttp\Client;
 class ApiHelper {
 
 	protected $api;
+	protected $apiurl;
 	protected $user;
 	protected $creds;
 
@@ -23,10 +24,18 @@ class ApiHelper {
 	 * @param string $apiurl Url to build the Api endpoint and do all further queries against
 	 */
 	public function __construct( $apiurl = 'https://en.wikipedia.org/w/api.php' ) {
+		$this->apiurl = $apiurl;
 		$this->api = MediawikiApi::newFromApiEndpoint( $apiurl );
+		$this->login();
+	}
+
+	/**
+	 * Log in
+	 */
+	public function login() {
 		$creds = parse_ini_file( 'config.ini' );
 		$this->creds = $creds;
-		$this->user = new ApiUser( $creds['botuser'], $creds['botpass'], $apiurl );
+		$this->user = new ApiUser( $creds['botuser'], $creds['botpass'], $this->apiurl );
 		$this->api->login( $this->user );
 	}
 
@@ -138,6 +147,7 @@ class ApiHelper {
 					$titles[] = $r['title'];
 				}
 			}
+			unset( $redirects );
 			// Get monthly pageviews for all of the titles i.e. original page and its redirects using promises
 			$promises = [];
 			foreach ( $titles as $title ) {
@@ -148,13 +158,12 @@ class ApiHelper {
 			try {
 				$responses = GuzzleHttp\Promise\settle( $promises )->wait();
 			} catch ( Exception $e ) {
-				// Ignore since we are logging those below anyway.
+				// Ignore
 			}
+			unset( $promises, $titles );
 			foreach ( $responses as $response ) {
 				if ( $response['state'] !== 'fulfilled' ) {
-					$file = fopen( 'nopageviewdata.txt', 'a' );
-					$output = date( 'Y-m-d H:i:s' ) . '  ' . $url;
-					fwrite( $file, $output . PHP_EOL );
+					// Do nothing, API didn't have data most likely
 				} else {
 					$result = $response['value'];
 					$result = json_decode( $result->getBody()->getContents(), true );
@@ -163,6 +172,8 @@ class ApiHelper {
 					}
 				}
 			}
+			unset( $responses );
+			gc_collect_cycles();
 		}
 		logToFile( 'Pageviews fetch complete' );
 		arsort( $results );
@@ -222,6 +233,9 @@ The table below is the wikitext-table representation of the config used for gene
 	 * @return array|\GuzzleHttp\Promise\PromiseInterface
 	 */
 	public function setText( $page, $text, $section = false ) {
+		if ( !$this->api->isLoggedin() ) {
+			$this->login();
+		}
 		$session = new MediawikiSession( $this->api );
 		$token = $session->getToken( 'edit' );
 		logToFile( 'Attempting to update wikipedia page' );
