@@ -44,7 +44,11 @@ class ReportUpdater {
 			// Get dates for last month
 			$start = strtotime( 'first day of previous month' );
 			$end = strtotime( 'last day of previous month' );
-			$views = $this->api->getMonthlyPageviews( array_keys( $pages ), date( 'Ymd00', $start ), date( 'Ymd00', $end ) );
+			if ( $info['Name'] == 'Biography' ) {
+				$views = $this->api->getMonthlyPageviewsWithoutPromises( array_keys( $pages ), date( 'Ymd00', $start ), date( 'Ymd00', $end ) );
+			} else {
+				$views = $this->api->getMonthlyPageviews( array_keys( $pages ), date( 'Ymd00', $start ), date( 'Ymd00', $end ) );
+			}
 			// Compute total views for the month
 			$totalViews = array_sum( array_values( $views ) );
 			$views = array_slice( $views, 0, $info['Limit'], true );
