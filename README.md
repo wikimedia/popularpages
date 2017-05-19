@@ -7,7 +7,7 @@ A tool for generating monthly popular pages reports for WikiProjects.
 See [the tool's homepage](https://wikitech.wikimedia.org/wiki/Tool:Popular_Pages) for more information.
 
 ##### Setting up the bot
-* Add the bot's username and password to the `config.ini.example` file and rename it `config.ini`.
+* Copy `config.ini.example` to `config.ini` and add the bot's username and password.
 * Run `composer install` from the command line.
 * Either run the bot manually or set up a cron job to run it once a month.
 
