@@ -89,7 +89,7 @@ Updated on: ~~~~~
 | {{formatnum:' . floor( $view / ( floor( ( $end - $start ) / ( 60 * 60 * 24 ) ) ) ) . '}}
 {{class|' . $pages[$title]['class'] . '}}
 {{importance|' . $pages[$title]['importance'] . '}}
-| [https://tools.wmflabs.org/pageviews/?project=en.wikipedia.org&start=' . date( 'Y-m-d', $start ) . '&end=' . date( 'Y-m-d', $end ) . '&pages=' . str_replace( ' ', '_', $title ) . ' Link]
+| [https://tools.wmflabs.org/pageviews/?project=en.wikipedia.org&start=' . date( 'Y-m-d', $start ) . '&end=' . date( 'Y-m-d', $end ) . '&pages=' .addslashes( str_replace( ' ', '_', $title ) ) . ' Link]
 |-
 ';
 				$index++;
