@@ -181,53 +181,6 @@ class ApiHelper {
 	}
 
 	/**
-	 * Get monthly pageviews for given page and its redirects between gives dates
-	 * This is a slightly modified version of the above function and does not use promises
-	 * It's a workaround for a Guzzle/PHP bug where it keep accumulating memory to the point
-	 * where it runs out of memory for large projects like Biography
-	 *
-	 * @param array $pages of pages to fetch pageviews for
-	 * @param string $start Query datetime start string
-	 * @param string $end Query datetime end string
-	 * @return array|int
-	 */
-	public function getMonthlyPageviewsWithoutPromises( $pages, $start, $end ) {
-		logToFile( 'Fetching monthly pageviews' );
-		$results = [];
-		$lim = 99;
-		echo count( $pages );
-		foreach ( $pages as $page ) {
-			$results[$page] = 0; // Initialize with 0 views
-			// Get redirects
-			$redirects = $this->apiQuery( [ 'titles' => $page, 'prop' => 'redirects', 'rdlimit' => 500 ] );
-			$titles = [$page]; // An array to hold the main page and its redirects
-			// Extract all redirect titles
-			if ( isset( $redirects['query']['pages'][0]['redirects'] ) ) {
-				foreach ( $redirects['query']['pages'][0]['redirects'] as $r ) {
-					$titles[] = $r['title'];
-				}
-			}
-			// Get monthly pageviews for all of the titles i.e. original page and its redirects
-			foreach ( $titles as $title ) {
-				$url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/' . rawurlencode( $title ) . '/monthly/' . $start . '/' . $end;
-				$result = json_decode( @file_get_contents( $url ), true );
-				if ( isset( $result['items'] ) ) {
-					$results[$page] += (int)$result['items'][0]['views'];
-				}
-			}
-			// Throttling purposes
-			$lim--;
-			if ( $lim == 0 ) {
-				usleep( 10000 );
-				$lim = 99;
-			}
-		}
-		logToFile( 'Pageviews fetch complete' );
-		arsort( $results );
-		return $results;
-	}
-
-	/**
 	 * Update index page for the bot, showing last update timestamps and projects
 	 *
 	 * @param string $page Page link
