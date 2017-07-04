@@ -31,6 +31,11 @@ class ReportUpdater {
 				logToFile( 'Error: Incomplete data in config for ' . $project . '. Skipping.' );
 				continue;
 			}
+			// Make sure report will be written to Wikipedia namespace
+			if ( strpos( $info['Report'], 'Wikipedia:' ) !== 0 ) {
+				logToFile( 'Error: Invalid data in config for ' . $project . '. Skipping.' );
+				continue;
+			}
 			logToFile( 'Beginning to process: ' . $info['Name'] );
 			// Check the project exists
 			if ( !$this->api->doesTitleExist( $project ) ) {
