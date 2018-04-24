@@ -1,32 +1,52 @@
 <?php
+/**
+ * This file contains only the ApiHelper class.
+ */
 
-// Simple helper functions for API interactions
-use Mediawiki\Api\MediawikiApi;
 use Mediawiki\Api\ApiUser;
 use Mediawiki\Api\FluentRequest;
+use Mediawiki\Api\MediawikiApi;
 use Mediawiki\Api\MediawikiSession;
-use GuzzleHttp\Promise;
-use GuzzleHttp\Client;
+use Symfony\Component\Yaml\Yaml;
 
 /**
- * Class ApiHelper
+ * An ApiHelper assists with fetching data from the API and database.
+ * Post-processing of this data is minimal.
  */
 class ApiHelper {
 
+	/** @var MediawikiApi The MediawikiApi interface. */
 	protected $api;
+
+	/** @var string URL to the wiki's API endpoint. */
 	protected $apiurl;
+
+	/** @var string The relevant wiki, in the form lang.project */
+	protected $wiki;
+
+	/** @var ApiUser The ApiUser instance. */
 	protected $user;
+
+	/** @var string[] The bot's credentials. */
 	protected $creds;
+
+	/** @var string[] Assessment configuration (colors, icons, etc.) */
+	protected $assessmentConfig;
+
+	/** @var string[] The wiki's configuration of where relevant pages live. */
+	protected $wikiConfig;
 
 	/**
 	 * ApiHelper constructor.
 	 *
-	 * @param string $apiurl Url to build the Api endpoint and do all further queries against
+	 * @param string $wiki Wiki in the format lang.project, such as en.wikipedia
 	 */
-	public function __construct( $apiurl = 'https://en.wikipedia.org/w/api.php' ) {
-		$this->apiurl = $apiurl;
-		$this->api = MediawikiApi::newFromApiEndpoint( $apiurl );
+	public function __construct( $wiki = 'en.wikipedia' ) {
+		$this->wiki = $wiki;
+		$this->apiurl = "https://$wiki.org/w/api.php";
+		$this->api = MediawikiApi::newFromApiEndpoint( $this->apiurl );
 		$this->login();
+		$this->wikiConfig = Yaml::parseFile( './wikis.yml' )[$wiki];
 	}
 
 	/**
@@ -40,7 +60,16 @@ class ApiHelper {
 	}
 
 	/**
-	 * Check if a given title exists on wikipedia
+	 * Get the configuration for the wiki as a whole. Includes 'index' (location of index page),
+	 * 'config' (location of WikiProjects config) and 'category' (category the reports are put in).
+	 * @return string[]
+	 */
+	public function getWikiConfig() {
+		return $this->wikiConfig;
+	}
+
+	/**
+	 * Check if a given title exists on the wiki.
 	 *
 	 * @param string $title Title to check existence for
 	 * @return bool True if title exists else false
@@ -57,32 +86,32 @@ class ApiHelper {
 	}
 
 	/**
-	 * Checks if the first section is present already in a page
+	 * Checks if the first section is present already in a page.
 	 *
 	 * @param string $title The page title we're looking for first section in
 	 * @return bool True if exists, else false
 	 */
-	public function doesListSectionExist( $title ) {
+	public function hasLeadSection( $title ) {
 		if ( !$this->doesTitleExist( $title ) ) {
 			return false;
 		}
 		$params = [ 'page' => $title,  'prop' => 'sections' ];
 		$result = $this->apiQuery( $params, 'parse' );
 		if ( !isset( $result['parse']['sections'][0] ) ) {
-			// We return false if we didn't fina any section
+			// We return false if we didn't find any section
 			return false;
 		}
 		return true;
 	}
 
 	/**
-	 * Get project titles & assessments for all pages in a wikiproject
+	 * Get titles & assessments for all pages in a wikiproject.
 	 *
 	 * @param string $project Name of the project, i.e. 'Medicine'
 	 * @return array
 	 */
 	public function getProjectPages( $project ) {
-		logToFile( 'Fetching pages and assessments for project ' . $project );
+		wfLogToFile( 'Fetching pages and assessments for project ' . $project );
 		$params = [
 			'list' => 'projectpages',
 			'wppprojects' => $project,
@@ -93,17 +122,17 @@ class ApiHelper {
 		if ( isset( $result['query']['projects'][$project] ) ) {
 			$projects = $result['query']['projects'][$project];
 		} else {
-			logToFile( 'Project or project pages not found. Aborting!' );
+			wfLogToFile( 'Project or project pages not found. Aborting!' );
 			return [];
 		}
 		$pages = [];
 		// Loop through the pages and assessment information we got
 		foreach ( $projects as $p ) {
 			if ( $p['ns'] === 0 ) {
-				$pages[$p['title']] = array(
+				$pages[$p['title']] = [
 					'class' => $p['assessment']['class'],
 					'importance' => $p['assessment']['importance']
-				);
+				];
 			}
 		}
 		// Do any continuation queries that may be needed
@@ -113,34 +142,39 @@ class ApiHelper {
 			$projects = $result['query']['projects'][$project];
 			foreach ( $projects as $p ) {
 				if ( $p['ns'] === 0 ) {
-					$pages[$p['title']] = array(
+					$pages[$p['title']] = [
 						'class' => $p['assessment']['class'],
 						'importance' => $p['assessment']['importance']
-					);
+					];
 				}
 			}
 		}
-		logToFile( 'Total number of pages fetched: ' . count( $pages ) );
+		wfLogToFile( 'Total number of pages fetched: ' . count( $pages ) );
 		return $pages;
 	}
 
 	/**
-	 * Get monthly pageviews for given page and its redirects between gives dates
+	 * Get monthly pageviews for given page and its redirects between gives dates.
 	 *
-	 * @param array $pages of pages to fetch pageviews for
-	 * @param string $start Query datetime start string
-	 * @param string $end Query datetime end string
+	 * @param array $pages Pages to query for.
+	 * @param string $start Start date, in YYYYMMDD00 format.
+	 * @param string $end End date, in YYYYMMDD00 format.
 	 * @return array|int
 	 */
 	public function getMonthlyPageviews( $pages, $start, $end ) {
-		logToFile( 'Fetching monthly pageviews' );
+		wfLogToFile( 'Fetching monthly pageviews' );
 		$client = new \GuzzleHttp\Client(); // Client for our promises
 		$results = [];
+
 		foreach ( $pages as $page ) {
 			$results[$page] = 0; // Initialize with 0 views
 			// Get redirects
-			$redirects = $this->apiQuery( [ 'titles' => $page, 'prop' => 'redirects', 'rdlimit' => 500 ] );
-			$titles = [$page]; // An array to hold the main page and its redirects
+			$redirects = $this->apiQuery( [
+				'titles' => $page,
+				'prop' => 'redirects',
+				'rdlimit' => 500
+			] );
+			$titles = [ $page ]; // An array to hold the main page and its redirects
 			// Extract all redirect titles
 			if ( isset( $redirects['query']['pages'][0]['redirects'] ) ) {
 				foreach ( $redirects['query']['pages'][0]['redirects'] as $r ) {
@@ -148,10 +182,13 @@ class ApiHelper {
 				}
 			}
 			unset( $redirects );
-			// Get monthly pageviews for all of the titles i.e. original page and its redirects using promises
+
+			// Get monthly pageviews for all of the titles i.e. original page
+			// and its redirects using promises.
 			$promises = [];
 			foreach ( $titles as $title ) {
-				$url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/' . rawurlencode( $title ) . '/monthly/' . $start . '/' . $end;
+				$url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/' . $this->wiki .
+					'/all-access/user/' . rawurlencode( $title ) . '/monthly/' . $start . '/' . $end;
 				$promise = $client->getAsync( $url );
 				$promises[] = $promise; // Add the promise for each request to promises array
 			}
@@ -161,6 +198,7 @@ class ApiHelper {
 				// Ignore
 			}
 			unset( $promises, $titles );
+
 			foreach ( $responses as $response ) {
 				if ( $response['state'] !== 'fulfilled' ) {
 					// Do nothing, API didn't have data most likely
@@ -173,55 +211,11 @@ class ApiHelper {
 				}
 			}
 			unset( $responses );
-			gc_collect_cycles();
 		}
-		logToFile( 'Pageviews fetch complete' );
+		wfLogToFile( 'Pageviews fetch complete' );
+
 		arsort( $results );
 		return $results;
-	}
-
-	/**
-	 * Update index page for the bot, showing last update timestamps and projects
-	 *
-	 * @param string $page Page link
-	 */
-	public function updateIndex( $page ) {
-		$output = '
-The table below is the wikitext-table representation of the config used for generating Popular pages for wikiprojects. The actual config can be found at [[User:Community Tech bot/Popular pages config.json]].
-\'\'\'Please do not edit this page\'\'\'. All edits will be overwritten the next time bot updates this page.
-
--- ~~~~
-
-== List of projects ==
-{| class="wikitable sortable"
-!Project
-!Report
-!Limit
-!Updated on
-';
-		$projects = $this->getJSONConfig();
-		foreach ( $projects as $project => $info ) {
-			$params = [
-				'prop' => 'revisions',
-				'titles' => $info['Report'],
-				'rvprop' => 'timestamp',
-				'rvuser' => $this->creds['botuser'],
-				'rvlimit' => 1
-			];
-			$res = $this->apiQuery( $params );
-			$timestamp = '';
-			if ( isset( $res['query']['pages'][0]['revisions'][0]['timestamp'] ) ) {
-				$timestamp = date( 'Y-m-d', strtotime( $res['query']['pages'][0]['revisions'][0]['timestamp'] ) );
-			}
-			$output .= '
-|-
-|[[' . $project . ']]
-|[[' . $info['Report'] . ']]
-|' . $info['Limit'] . '
-|' . $timestamp . '
-';
-		}
-		$this->setText( $page, $output );
 	}
 
 	/**
@@ -238,7 +232,7 @@ The table below is the wikitext-table representation of the config used for gene
 		}
 		$session = new MediawikiSession( $this->api );
 		$token = $session->getToken( 'edit' );
-		logToFile( 'Attempting to update wikipedia page' );
+		wfLogToFile( 'Attempting to update wikipedia page' );
 		$params = [
 			'title' => $page,
 			'text' => $text,
@@ -248,48 +242,40 @@ The table below is the wikitext-table representation of the config used for gene
 		if ( $section ) {
 			$params['section'] = $section;
 		}
+
 		$result = $this->apiQuery( $params, 'edit', 'post' );
 		if ( $result ) {
-			logToFile( 'Page ' . $page . ' updated' );
+			wfLogToFile( 'Page ' . $page . ' updated' );
 		} else {
-			logToFile( 'Page ' . $page . ' could not be updated' );
+			wfLogToFile( 'Page ' . $page . ' could not be updated' );
 		}
 		return $result;
 	}
 
-
 	/**
-	 * Fetch JSON config from wiki config page
+	 * Fetch JSON config from wiki config page.
 	 *
-	 * @param string $page Wikipedia page title to fetch config from
-	 * @return array Config data
+	 * @return array Config data.
 	 */
-	public function getJSONConfig( $page = 'User:Community Tech bot/Popular pages config.json' ) {
+	public function getJSONConfig() {
 		$api = new ApiHelper();
 		$params = [
-			'page' => $page,
+			'page' => $this->wikiConfig['config'],
 			'prop' => 'wikitext'
 		];
 		$res = $api->apiQuery( $params, 'parse' );
-		$res = json_decode( $res['parse']['wikitext'], true );
-		$config = [];
-		foreach ( $res as $k => $v ) {
-			if ( $k === 'description' ) {
-				continue;
-			}
-			$config[$k] = [
-				'Report' => $v['Report'],
-				'Limit' => $v['Limit'],
-				'Name' => $v['Name']
-			];
-		}
+		$config = json_decode( $res['parse']['wikitext'], true );
+
+		// Remove the 'description' entry which is meant only as explanatory text.
+		unset( $config['description'] );
+
 		return $config;
 	}
 
 	/**
-	 * Get projects which have not been updated for current cycle using the API
+	 * Get WikiProjects which have not been updated for current cycle using the API.
 	 *
-	 * @return array Config for projects which were not updated in the current month
+	 * @return array Config for WikiProjects which were not updated in the current month.
 	 */
 	public function getStaleProjects() {
 		$config = $this->getJSONConfig();
@@ -315,23 +301,50 @@ The table below is the wikitext-table representation of the config used for gene
 	}
 
 	/**
-	 * Get config for a single project
-	 * @param string $projectName Name of project as specified in Name parameter
-	 *     of JSON config
-	 * @return array|null Config for a single project or null if project not found
+	 * Get config for a single WikiProject.
+	 *
+	 * @param string $projectName Name of WikiProject as specified in Name parameter
+	 *     of the JSON config.
+	 * @return array|null Config for a single WikiProject or null if project not found.
 	 */
 	public function getProject( $projectName ) {
 		$config = $this->getJSONConfig();
 		foreach ( $config as $project => $info ) {
 			if ( $info['Name'] === $projectName ) {
-				return array( $project => $info );
+				return [ $project => $info ];
 			}
 		}
 		return null;
 	}
 
 	/**
+	 * Get the date the bot last edited the given page.
+	 * Used on the WikiProject index page, since sometimes we run one-off reports of a specific
+	 * WikiProject, at which point we don't know the 'last updated' date for the other reports.
+	 *
+	 * @param  string $page
+	 * @return string Date in YYYY-MM-DD format.
+	 */
+	public function getBotLastEditDate( $page ) {
+		$params = [
+			'prop' => 'revisions',
+			'titles' => $page,
+			'rvprop' => 'timestamp',
+			'rvuser' => $this->creds['botuser'],
+			'rvlimit' => 1
+		];
+		$res = $this->apiQuery( $params );
+
+		if ( isset( $res['query']['pages'][0]['revisions'][0]['timestamp'] ) ) {
+			return date( 'Y-m-d', strtotime( $res['query']['pages'][0]['revisions'][0]['timestamp'] ) );
+		} else {
+			return '';
+		}
+	}
+
+	/**
 	 * Wrapper to make simple API query for JSON and in formatversion 2
+	 *
 	 * @param array $params Params to add to the request
 	 * @param string $action Query action
 	 * @param string $method Get/post
@@ -352,15 +365,15 @@ The table below is the wikitext-table representation of the config used for gene
 				try {
 					$res = $this->api->getRequestAsync( $factory );
 				} catch ( Exception $e ) {
-					//Uh oh, we got an exception, let's log it and retry
-					logToFile( 'Exception caught during API request: ' . $e->getMessage() );
+					// Uh oh, we got an exception, let's log it and retry.
+					wfLogToFile( 'Exception caught during API request: ' . $e->getMessage() );
 					$res = $this->api->getRequestAsync( $factory );
 				}
 			} else {
 				try {
 					$res = $this->api->getRequest( $factory );
 				} catch ( Exception $e ) {
-					logToFile( 'Exception caught during API request: ' . $e->getMessage() );
+					wfLogToFile( 'Exception caught during API request: ' . $e->getMessage() );
 					$res = $this->api->getRequest( $factory );
 				}
 			}
@@ -369,14 +382,14 @@ The table below is the wikitext-table representation of the config used for gene
 				try {
 					$res = $this->api->postRequestAsync( $factory );
 				} catch ( Exception $e ) {
-					logToFile( 'Exception caught during API request: ' . $e->getMessage() );
+					wfLogToFile( 'Exception caught during API request: ' . $e->getMessage() );
 					$res = $this->api->postRequestAsync( $factory );
 				}
 			} else {
 				try {
 					$res = $this->api->postRequest( $factory );
 				} catch ( Exception $e ) {
-					logToFile( 'Exception caught during API request: ' . $e->getMessage() );
+					wfLogToFile( 'Exception caught during API request: ' . $e->getMessage() );
 					$res = $this->api->postRequest( $factory );
 				}
 			}
@@ -384,4 +397,25 @@ The table below is the wikitext-table representation of the config used for gene
 		return $res;
 	}
 
+	/**
+	 * Get the wiki's assessment configuration from the XTools API.
+	 * This includes the colours and icons for each classification and importance level.
+	 *
+	 * @return string[]
+	 */
+	public function getAssessmentConfig() {
+		if ( $this->assessmentConfig !== null ) {
+			return $this->assessmentConfig;
+		}
+
+		$client = new GuzzleHttp\Client();
+		$ret = $client->request(
+			'GET',
+			'https://xtools.wmflabs.org/api/project/assessments'
+		)->getBody()->getContents();
+
+		$this->assessmentConfig = json_decode( $ret, true )['config'][$this->wiki.'.org'];
+
+		return $this->assessmentConfig;
+	}
 }

@@ -1,0 +1,9 @@
+en.wikipedia:
+    # The 'index' page, which lists all the configured WikiProjects in a formatted table.
+    index: 'User:Community Tech bot/Popular pages'
+
+    # The configuration page, where you add configuration for individual WikiProjects.
+    config: 'User:Community Tech bot/Popular pages config.json'
+
+    # The category that the individual reports should be placed in.
+    category: 'Category:Lists of popular pages by WikiProject'

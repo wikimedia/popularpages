@@ -1,0 +1,23 @@
+{{ msg('index-page-header-1') }}
+{{ msg('report-header-2', configPage) }}
+
+'''{{ msg('index-page-dont-edit') }}'''. {{ msg('index-page-overriden') }}
+
+-- ~~~~
+
+== {{ msg('list-of-projects') }} ==
+
+{| class="wikitable sortable"
+! {{ msg('wikiproject') }}
+! {{ msg('report') }}
+! {{ msg('limit') }}
+! {{ msg('updated') }}
+|-
+{% for project, config in projects %}
+| [[{{ project }}|{{ config.Name }}]]
+| [[{{ config.Report }}]]
+| {% verbatim %}{{FORMATNUM:{% endverbatim %}{{ config.Limit }}}}
+| {{ config.Updated }}
+|-
+{% endfor %}
+|}

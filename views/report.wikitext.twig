@@ -1,0 +1,32 @@
+{% if not(hasLeadSection) %}
+{{ msg('report-header', '[[' ~ project ~ ']]') }}
+
+{% endif %}
+== {{ msg('list') }} ==
+<!-- Changes made below this line will be overwritten on the next update. -->
+'''{{ msg('period') }}''': {{ msg('date-range', [start|date('Y-m-d'), end|date('Y-m-d')]) }}
+
+'''{{ msg('total-views') }}''': {% verbatim %}{{FORMATNUM:{% endverbatim %}{{ totalViews }}}}
+
+{{ msg('updated') }}: ~~~~~
+`
+{| class="wikitable sortable"
+! {{ msg('rank') }}
+! {{ msg('page-title') }}
+! {{ msg('views') }}
+! {{ msg('daily-average') }}
+! {{ msg('assessment') }}
+! {{ msg('importance') }}
+|-
+{% for title, data in pages %}
+| {{ loop.index }}
+| [[{{ title }}]]
+| [https://tools.wmflabs.org/redirectviews/?project={{ wiki }}.org&amp;start={{ start|date('Y-m-d') }}&amp;end={{ end|date('Y-m-d') }}&amp;page={{ title|replace({' ': '_'}) }} {% verbatim %}{{FORMATNUM:{% endverbatim %}{{ data.views }}}}]
+| {% verbatim %}{{FORMATNUM:{% endverbatim %}{{ data.avgViews }}}}
+| style="text-align:center; white-space:nowrap; font-weight:bold; background:{{ assessments.class[data.class].color }}" | [[:{{ assessments.class[data.class].category }}|{{ data.class }}]]
+| style="text-align:center; white-space:nowrap; font-weight:bold; background:{{ assessments.importance[data.importance].color }}" | [[:{{ assessments.importance[data.importance].category }}|{{ data.importance }}]]
+|-
+{% endfor %}
+|}
+
+[[{{ category }}]]

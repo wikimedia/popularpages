@@ -1,17 +1,62 @@
 <?php
+/**
+ * This file contains only the ReportUpdater class.
+ */
 
+/**
+ * A ReportUpdater is responsible for creating a report for one or more
+ * WikiProjects on the given wiki.
+ */
 class ReportUpdater {
 
+	/** @var ApiHelper ApiHelper instance. */
 	protected $api;
+
+	/** @var string Target wiki such as 'en.wikipedia'. */
+	protected $wiki;
+
+	/** @var int Unix timestamp of start date. */
+	protected $start;
+
+	/** @var int Unix timestamp of end date. */
+	protected $end;
+
+	/** @var Twig_Environment The Twig rendering engine. */
+	private $twig;
+
+	/** @var Intuition Instance of Intuition translation service. */
+	private $i18n;
 
 	/**
 	 * ReportUpdater constructor.
-	 * If a projects array is provided, the constructor fetches the config info for those projects and updates them
 	 *
-	 * @param null|array $projects List of projects to update
+	 * @param string $wiki Target wiki in the format lang.project, such as 'en.wikipedia'.
 	 */
-	public function __construct() {
-		$this->api = new ApiHelper();
+	public function __construct( $wiki = 'en.wikipedia' ) {
+		$this->api = new ApiHelper( $wiki );
+		$this->wiki = $wiki;
+
+		// Set dates for the previous month.
+		$this->start = strtotime( 'first day of previous month' );
+		$this->end = strtotime( 'last day of previous month' );
+
+		// Setup Twig renderer.
+		$loader = new Twig_Loader_Filesystem( './views' );
+		$this->twig = new Twig_Environment( $loader );
+
+		// Setup Intuition.
+		$this->i18n = new Intuition( 'popular-pages' );
+		$this->i18n->registerDomain( 'popular-pages', __DIR__ . '/messages' );
+		$this->i18n->setLang( explode( '.', $wiki )[0] );
+
+		// Set up msg function in Twig.
+		$msgFunc = new Twig_SimpleFunction( 'msg', function ( $key, $params = [] ) {
+			$params = is_array( $params ) ? $params : [];
+			return $this->i18n->msg(
+				$key, [ 'domain' => 'popular-pages', 'variables' => $params ]
+			);
+		} );
+		$this->twig->addFunction( $msgFunc );
 	}
 
 	/**
@@ -22,97 +67,137 @@ class ReportUpdater {
 	public function updateReports( $config ) {
 		// Make sure config isn't empty
 		if ( !is_array( $config ) || count( $config ) < 1 ) {
-			logToFile( 'Error: Invalid config. Aborting!' );
+			wfLogToFile( 'Error: Invalid config. Aborting!' );
 			return;
 		}
-		foreach ( $config as $project => $info ) {
-			// Check that config values are set
-			if ( !isset( $info['Name'] ) || !isset( $info['Limit'] ) || !isset( $info['Report'] ) ) {
-				logToFile( 'Error: Incomplete data in config for ' . $project . '. Skipping.' );
-				continue;
-			}
-			// Make sure report will be written to Wikipedia namespace
-			if ( strpos( $info['Report'], 'Wikipedia:' ) !== 0 ) {
-				logToFile( 'Error: Invalid data in config for ' . $project . '. Skipping.' );
-				continue;
-			}
-			logToFile( 'Beginning to process: ' . $info['Name'] );
-			// Check the project exists
-			if ( !$this->api->doesTitleExist( $project ) ) {
-				logToFile( 'Error: Project page for ' . $info['Name'] . ' does not exist! Skipping.' );
-				continue;
-			}
-			$pages = $this->api->getProjectPages( $info['Name'] ); // Returns { 'title' => ['class'=>'', 'importance'=>''],...}
-			if ( empty( $pages ) ) {
-				continue;
-			}
-			// Get dates for last month
-			$start = strtotime( 'first day of previous month' );
-			$end = strtotime( 'last day of previous month' );
-			if ( count( $pages ) > 1000000 ) { // See T164178
-				logToFile( 'Error: ' . $project . ' is too large. Skipping.' );
-				continue;
-			}
-			$views = $this->api->getMonthlyPageviews( array_keys( $pages ), date( 'Ymd00', $start ), date( 'Ymd00', $end ) );
-			// Compute total views for the month
-			$totalViews = array_sum( array_values( $views ) );
-			$views = array_slice( $views, 0, $info['Limit'], true );
-			$hasListSection = $this->api->doesListSectionExist( $info['Report'] );
-			$output = '';
-			// If the report page doesn't already exist, include a default header:
-			if ( !$hasListSection ) {
-				$output .= '
-This is a list of pages in the scope of [[' . $project . ']] along with pageviews.
 
-To report bugs, please write on the [[meta:User_talk:Community_Tech_bot|Community tech bot]] talk page on Meta.
-
-';
+		foreach ( $config as $project => $projectConfig ) {
+			if ( !$this->validateProjectConfig( $project, $projectConfig ) ) {
+				continue;
 			}
-			$output .=
-"== List ==\n" .
-"<!-- Changes made below this line will be overwritten on the next update. -->\n" .
-'Period: ' . date( 'Y-m-d', $start ) . ' to ' . date( 'Y-m-d', $end ) . '.
-Total views: {{formatnum:' . $totalViews . '}}
 
-Updated on: ~~~~~
+			// Generate and save the report.
+			$this->processProject( $project, $projectConfig );
 
-{| class="wikitable sortable" style="text-align: left;"
-! Rank
-! Page title
-! Views
-! Views per day (average)
-! Assessment
-! Importance
-! Link to pageviews tool
-|-
-';
-			$index = 1;
-			foreach ( $views as $title => $view ) {
-				$output .= '| ' . $index . '
-| [[' . $title . ']]
-| {{formatnum:' . $view . '}}
-| {{formatnum:' . floor( $view / ( floor( ( $end - $start ) / ( 60 * 60 * 24 ) ) ) ) . '}}
-{{class|' . $pages[$title]['class'] . '}}
-{{importance|' . $pages[$title]['importance'] . '}}
-| [https://tools.wmflabs.org/pageviews/?project=en.wikipedia.org&start=' . date( 'Y-m-d', $start ) . '&end=' . date( 'Y-m-d', $end ) . '&pages=' .addslashes( str_replace( ' ', '_', $title ) ) . ' Link]
-|-
-';
-				$index++;
-			}
-			$output .= '
-|}
-[[Category:Lists of popular pages by WikiProject]]';
-			// Update report text on wiki page
-			if ( $hasListSection ) {
-				// Update only the section if it exists
-				$this->api->setText( $info['Report'], $output, 1 );
-			} else {
-				// Update complete page
-				$this->api->setText( $info['Report'], $output );
-			}
-			logToFile( 'Finished processing: ' . $info['Name'] );
+			wfLogToFile( 'Finished processing: ' . $projectConfig['Name'] );
 		}
-		// Update index page
-		$this->api->updateIndex( 'User:Community Tech bot/Popular pages' );
+
+		// Update index page.
+		$this->updateIndex();
+	}
+
+	/**
+	 * Process an individual WikiProject and update its popular pages report.
+	 *
+	 * @param  string $project
+	 * @param  array $config As specified in the on-wiki JSON config.
+	 * @return string Date when report completed.
+	 */
+	private function processProject( $project, $config ) {
+		// Returns { 'title' => ['class'=>'', 'importance'=>''],...}
+		$pages = $this->api->getProjectPages( $config['Name'] );
+
+		if ( empty( $pages ) ) {
+			return;
+		}
+
+		if ( count( $pages ) > 1000000 ) { // See T164178
+			wfLogToFile( 'Error: ' . $project . ' is too large. Skipping.' );
+			return;
+		}
+
+		$pageviews = $this->api->getMonthlyPageviews(
+			array_keys( $pages ),
+			date( 'Ymd00', $this->start ),
+			date( 'Ymd00', $this->end )
+		);
+
+		// Compute total views for the month
+		$totalViews = array_sum( array_values( $pageviews ) );
+
+		// Truncate to configured limit.
+		$pageviews = array_slice( $pageviews, 0, $config['Limit'], true );
+
+		// Populate new reported pages.
+		foreach ( $pageviews as $title => $views ) {
+			$pageviews[$title] = array_merge( $pages[$title], [
+				'views' => $views,
+				'avgViews' => floor(
+					$views / ( floor( ( $this->end - $this->start ) / ( 60 * 60 * 24 ) ) )
+				),
+			] );
+
+			// Attempt to reduce memory usage, probably unneeded.
+			unset( $pages[$title] );
+		}
+
+		$hasLeadSection = $this->api->hasLeadSection( $config['Report'] );
+
+		// Generate and return wikitext.
+		$output = $this->twig->render( 'report.wikitext.twig', [
+			'hasLeadSection' => $hasLeadSection,
+			'wiki' => $this->wiki,
+			'start' => $this->start,
+			'end' => $this->end,
+			'project' => $project,
+			'pages' => $pageviews,
+			'totalViews' => $totalViews,
+			'assessments' => $this->api->getAssessmentConfig(),
+			'category' => $this->api->getWikiConfig()['category'],
+		] );
+
+		$this->api->setText( $config['Report'], $output, (int)$hasLeadSection );
+	}
+
+	/**
+	 * Update index page for the bot, listing each WikiProject, its report
+	 * and when it was last updated.
+	 */
+	public function updateIndex() {
+		$projectsConfig = $this->api->getJSONConfig();
+
+		foreach ( $projectsConfig as $project => &$data ) {
+			$data['Updated'] = $this->api->getBotLastEditDate( $project );
+		}
+
+		// Generate and return wikitext.
+		$output = $this->twig->render( 'index.wikitext.twig', [
+			'projects' => $projectsConfig,
+			'configPage' => $this->api->getWikiConfig()['config'],
+		] );
+
+		$this->api->setText( $this->api->getWikiConfig()['index'], $output );
+	}
+
+	/**
+	 * Validate the WikiProject config entry, including the syntax within the JSON config,
+	 * whether target page is the correct namespace, and if the target page actually exists.
+	 *
+	 * @param string $project The WikiProject.
+	 * @param array $config The WikiProject's configuration.
+	 * @return bool true if valid, false otherwise.
+	 */
+	private function validateProjectConfig( $project, $config ) {
+		// Check that config values are set
+		if ( !isset( $config['Name'] ) || !isset( $config['Limit'] ) || !isset( $config['Report'] ) ) {
+			wfLogToFile( 'Error: Incomplete data in config for ' . $project . '. Skipping.' );
+			return false;
+		}
+
+		// Don't allow writing report to main namespace. There is no easy way to grab the
+		// namespace ID so just reject titles that don't have a colon in them.
+		if ( false === strpos( $config['Report'], ':' ) ) {
+			wfLogToFile( "Error: $project is configured to write to the mainspace. Skipping." );
+			return false;
+		}
+		wfLogToFile( 'Beginning to process: ' . $config['Name'] );
+
+		// Check the project exists
+		if ( !$this->api->doesTitleExist( $project ) ) {
+			wfLogToFile( 'Error: Project page for ' . $config['Name'] . ' does not exist! Skipping.' );
+			return false;
+		}
+
+		return true;
 	}
 }

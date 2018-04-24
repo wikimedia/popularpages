@@ -8,3 +8,6 @@ nopageviewdata.txt
 /scripts
 log.txt
 /vendor
+/docs
+coverage.xml
+phpDocumentor.phar

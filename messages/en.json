@@ -1,0 +1,31 @@
+{
+	"@metadata": {
+		"authors": [
+			"MusikAnimal"
+		]
+	},
+	"assessment": "Assessment",
+	"config-subpage": "Popular pages config",
+	"daily-average": "Daily average",
+	"date-range": "$1 to $2",
+	"importance": "Importance",
+	"index-page-dont-edit": "Please do not edit this page",
+	"index-page-header-1": "The table below is the wikitext-table representation of the config used for generating Popular pages for WikiProjects.",
+	"index-page-header-2": "The actual configuration can be found at $1.",
+	"index-page-overriden": "All edits will be overwritten the next time bot updates this page.",
+	"limit": "Limit",
+	"list": "List",
+	"list-of-projects": "List of WikiProjects",
+	"page-title": "Page title",
+	"period": "Period",
+	"popular-pages": "Popular pages",
+	"rank": "Rank",
+	"report": "Report",
+	"report-bug": "To report bugs, please write on the [[meta:User talk:Community Tech bot|Community tech bot]] talk page on Meta.",
+	"report-comment": "Changes made below this line will be overwritten on the next update.",
+	"report-header": "This is a list of pages in the scope of $1 along with their pageviews, including all redirects.",
+	"total-views": "Total views",
+	"updated": "Updated",
+	"views": "Views",
+	"wikiproject": "WikiProject"
+}
