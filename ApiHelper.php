@@ -243,7 +243,8 @@ The table below is the wikitext-table representation of the config used for gene
 			'title' => $page,
 			'text' => $text,
 			'summary' => 'Popular pages report update',
-			'token' => $token
+			'token' => $token,
+			'bot' => true
 		];
 		if ( $section ) {
 			$params['section'] = $section;
