@@ -5,7 +5,10 @@
 	"homepage": "https://wikitech.wikimedia.org/wiki/Tool:Popular_Pages",
 	"require": {
 		"php" : ">=5.5.9",
-		"addwiki/mediawiki-api-base": "^2.3"
+		"addwiki/mediawiki-api-base": "^2.3",
+		"krinkle/intuition": "^0.7.0",
+		"twig/twig": "^1.0",
+		"symfony/yaml": "^3.4"
 	},
 	"require-dev": {
 		"mediawiki/mediawiki-codesniffer": "^0.7",
@@ -23,5 +26,14 @@
 		"psr-4": {
 			"Wikimedia\\PopularPages\\Tests\\": "tests/"
 		}
+	},
+	"scripts": {
+		"test": [
+			"composer validate --ansi",
+			"./vendor/bin/phpcs -s .",
+			"{ [ ! -f 'phpDocumentor.phar' ] && curl -L https://github.com/phpDocumentor/phpDocumentor2/releases/download/v2.9.0/phpDocumentor.phar --output phpDocumentor.phar; } || true",
+			"php phpDocumentor.phar -d . --ignore=vendor/ -t docs --template='checkstyle' --ansi --force && ( [ -z $(grep 'error' docs/checkstyle.xml) ] )",
+			"./vendor/bin/phpunit tests --coverage-clover=coverage.xml"
+		]
 	}
 }

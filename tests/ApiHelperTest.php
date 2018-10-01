@@ -1,14 +1,23 @@
 <?php
 /**
- * Tests for functions in ApiHelper.php
+ * This file contains only the ApiHelperTest class.
  */
+
+/** Require dependencies and set the timezone to UTC (may vary on local machines). */
 require __DIR__ . '/../vendor/autoload.php';
 date_default_timezone_set( 'UTC' );
 
+/**
+ * Tests for functions in ApiHelper.php.
+ */
 class ApiHelperTest extends \PHPUnit_Framework_TestCase {
 
+	/** @var ApiHelper The ApiHelper instance. */
 	protected $apiHelper;
 
+	/**
+	 * Constructor for the ApiHelperTest.
+	 */
 	public function __construct() {
 		parent::__construct();
 		$this->apiHelper = new ApiHelper();
@@ -25,17 +34,26 @@ class ApiHelperTest extends \PHPUnit_Framework_TestCase {
 	}
 
 	/**
-	 * Test the doesListSectionExist function
+	 * Test the hasLeadSection function
 	 */
-	public function testDoesListSectionExist() {
-		$this->assertTrue( $this->apiHelper->doesListSectionExist( 'Wikipedia:WikiProject Medicine/Popular pages' ) );
-		$this->assertFalse( $this->apiHelper->doesListSectionExist( 'User:Community Tech bot/Popular pages config.json' ) );
+	public function testHasLeadSection() {
+		$this->assertTrue(
+			$this->apiHelper->hasLeadSection(
+				'Wikipedia:WikiProject Medicine/Popular pages'
+			)
+		);
+		$this->assertFalse(
+			$this->apiHelper->hasLeadSection(
+				'User:Community Tech bot/Popular pages config.json'
+			)
+		);
 	}
 
 	/**
 	 * Test the getProjectPages function
 	 *
-	 * Check for presence of two titles in Disney project and the presence of their importance and class params
+	 * Check for presence of two titles in Disney project and the presence
+	 * of their importance and class params.
 	 */
 	public function ertestGetProjectPages() {
 		$pages = $this->apiHelper->getProjectPages( 'Disney' );
@@ -47,7 +65,7 @@ class ApiHelperTest extends \PHPUnit_Framework_TestCase {
 
 	/**
 	 * Test getMonthlyPageviews function
-	 * 
+	 *
 	 * Test for pageviews for the month of February for three known pages
 	 */
 	public function ertestGetMonthlyPageviews() {

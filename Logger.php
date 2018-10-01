@@ -19,12 +19,13 @@
  * @author Niharika Kohli <nkohli@wikimedia.org>
  * @copyright © 2016 Niharika Kohli and contributors.
  */
+
 /**
  * Log given message to file
  *
- * @param $message string Message to record in file
+ * @param string $message Message to record in file
  */
-function logToFile( $message ) {
+function wfLogToFile( $message ) {
 	$file = fopen( 'log.txt', 'a' );
 	$output = date( 'Y-m-d H:i:s' ) . '  ' . $message;
 	fwrite( $file, $output . PHP_EOL );
