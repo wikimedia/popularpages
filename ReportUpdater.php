@@ -41,7 +41,7 @@ class ReportUpdater {
 		$this->end = strtotime( 'last day of previous month' );
 
 		// Setup Twig renderer.
-		$loader = new Twig_Loader_Filesystem( './views' );
+		$loader = new Twig_Loader_Filesystem( __DIR__ . '/views' );
 		$this->twig = new Twig_Environment( $loader );
 
 		// Setup Intuition.

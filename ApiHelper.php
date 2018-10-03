@@ -46,7 +46,7 @@ class ApiHelper {
 		$this->apiurl = "https://$wiki.org/w/api.php";
 		$this->api = MediawikiApi::newFromApiEndpoint( $this->apiurl );
 		$this->login();
-		$this->wikiConfig = Yaml::parseFile( './wikis.yml' )[$wiki];
+		$this->wikiConfig = Yaml::parseFile( __DIR__ . '/wikis.yml' )[$wiki];
 	}
 
 	/**
