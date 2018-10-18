@@ -129,8 +129,8 @@ class ApiHelper {
 		// Loop through the pages and assessment information we got
 		foreach ( $projects as $p ) {
 			if ( $p['ns'] === 0 ) {
-				$class = $p['assessment']['class'];
-				$importance = $p['assessment']['importance'];
+				$class = ucfirst( $p['assessment']['class'] );
+				$importance = ucfirst( $p['assessment']['importance'] );
 				$pages[$p['title']] = [
 					'class' => $class == '' ? 'Unknown' : $class,
 					'importance' => $importance == '' ? 'Unknown' : $importance,
@@ -144,8 +144,8 @@ class ApiHelper {
 			$projects = $result['query']['projects'][$project];
 			foreach ( $projects as $p ) {
 				if ( $p['ns'] === 0 ) {
-					$class = $p['assessment']['class'];
-					$importance = $p['assessment']['importance'];
+					$class = ucfirst( $p['assessment']['class'] );
+					$importance = ucfirst( $p['assessment']['importance'] );
 					$pages[$p['title']] = [
 						'class' => $class == '' ? 'Unknown' : $class,
 						'importance' => $importance == '' ? 'Unknown' : $importance,
