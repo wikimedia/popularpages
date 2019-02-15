@@ -4,7 +4,7 @@
 	"license": "MIT",
 	"homepage": "https://wikitech.wikimedia.org/wiki/Tool:Popular_Pages",
 	"require": {
-		"php" : ">=5.5.9",
+		"php" : "^7.2",
 		"addwiki/mediawiki-api-base": "^2.3",
 		"krinkle/intuition": "^0.7.0",
 		"twig/twig": "^1.0",
