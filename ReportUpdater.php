@@ -3,6 +3,8 @@
  * This file contains only the ReportUpdater class.
  */
 
+use Krinkle\Intuition\Intuition;
+
 /**
  * A ReportUpdater is responsible for creating a report for one or more
  * WikiProjects on the given wiki.
@@ -156,8 +158,8 @@ class ReportUpdater {
 	public function updateIndex() {
 		$projectsConfig = $this->api->getJSONConfig();
 
-		foreach ( $projectsConfig as $project => &$data ) {
-			$data['Updated'] = $this->api->getBotLastEditDate( $project );
+		foreach ( $projectsConfig as $project => $config ) {
+			$projectsConfig[$project]['Updated'] = $this->api->getBotLastEditDate( $config['Report'] );
 		}
 
 		// Generate and return wikitext.

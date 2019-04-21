@@ -6,10 +6,11 @@
 	"require": {
 		"php" : "^7.2",
 		"addwiki/mediawiki-api-base": "^2.3",
-		"krinkle/intuition": "^0.7.0",
+		"krinkle/intuition": "^1.2.0",
 		"twig/twig": "^1.0",
-		"symfony/yaml": "^3.4"
-	},
+		"symfony/yaml": "^3.4",
+		"ext-json": "*"
+    },
 	"require-dev": {
 		"mediawiki/mediawiki-codesniffer": "^0.7",
 		"jakub-onderka/php-parallel-lint": "^0.9",
@@ -31,8 +32,6 @@
 		"test": [
 			"composer validate --ansi",
 			"./vendor/bin/phpcs -s .",
-			"{ [ ! -f 'phpDocumentor.phar' ] && curl -L https://github.com/phpDocumentor/phpDocumentor2/releases/download/v2.9.0/phpDocumentor.phar --output phpDocumentor.phar; } || true",
-			"php phpDocumentor.phar -d . --ignore=vendor/ -t docs --template='checkstyle' --ansi --force && ( [ -z $(grep 'error' docs/checkstyle.xml) ] )",
 			"./vendor/bin/phpunit tests --coverage-clover=coverage.xml"
 		]
 	}
