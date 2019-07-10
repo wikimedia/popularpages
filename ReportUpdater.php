@@ -93,44 +93,38 @@ class ReportUpdater {
 	 *
 	 * @param  string $project
 	 * @param  array $config As specified in the on-wiki JSON config.
-	 * @return string Date when report completed.
 	 */
-	private function processProject( $project, $config ) {
-		// Returns { 'title' => ['class'=>'', 'importance'=>''],...}
-		$pages = $this->api->getProjectPages( $config['Name'] );
+	private function processProject( $project, $config ) : void {
+		/** @var mysqli_result $pageStmt */
+		$pageStmt = $this->api->getProjectPages( $config['Name'] );
 
-		if ( empty( $pages ) ) {
+		if ( 0 === $pageStmt->num_rows ) {
 			return;
 		}
 
-		if ( count( $pages ) > 1000000 ) { // See T164178
+		if ( $pageStmt->num_rows > 1000000 ) { // See T164178
 			wfLogToFile( 'Error: ' . $project . ' is too large. Skipping.' );
 			return;
 		}
 
-		$pageviews = $this->api->getMonthlyPageviews(
-			array_keys( $pages ),
-			date( 'Ymd00', $this->start ),
-			date( 'Ymd00', $this->end )
+		$startDate = date( 'Ymd00', $this->start );
+		$endDate = date( 'Ymd00', $this->end );
+
+		[ $data, $totalViews ] = $this->api->getMonthlyPageviewsAndAssessments(
+			$pageStmt,
+			$startDate,
+			$endDate,
+			$config['Limit']
 		);
 
-		// Compute total views for the month
-		$totalViews = array_sum( array_values( $pageviews ) );
+		/** @var DateTime $startDateTime */
+		$startDateTime = DateTime::createFromFormat( 'Ymd00', $startDate );
+		$endDateTime = DateTime::createFromFormat( 'Ymd00', $endDate );
+		$daysInMonth = $endDateTime->diff( $startDateTime )->days + 1;
 
-		// Truncate to configured limit.
-		$pageviews = array_slice( $pageviews, 0, $config['Limit'], true );
-
-		// Populate new reported pages.
-		foreach ( $pageviews as $title => $views ) {
-			$pageviews[$title] = array_merge( $pages[$title], [
-				'views' => $views,
-				'avgViews' => floor(
-					$views / ( floor( ( $this->end - $this->start ) / ( 60 * 60 * 24 ) ) )
-				),
-			] );
-
-			// Attempt to reduce memory usage, probably unneeded.
-			unset( $pages[$title] );
+		// Add in averages.
+		foreach ( $data as $title => $datum ) {
+			$data[$title]['avgPageviews'] = floor( $datum['pageviews'] / $daysInMonth );
 		}
 
 		$hasLeadSection = $this->api->hasLeadSection( $config['Report'] );
@@ -142,7 +136,7 @@ class ReportUpdater {
 			'start' => $this->start,
 			'end' => $this->end,
 			'project' => $project,
-			'pages' => $pageviews,
+			'pages' => $data,
 			'totalViews' => $totalViews,
 			'assessments' => $this->api->getAssessmentConfig(),
 			'category' => $this->api->getWikiConfig()['category'],
