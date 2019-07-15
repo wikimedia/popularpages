@@ -21,6 +21,9 @@ class ApiHelper {
 	/** @var string URL to the wiki's API endpoint. */
 	protected $apiurl;
 
+	/** @var mysqli $db Connection to replica database. */
+	protected $db;
+
 	/** @var string The relevant wiki, in the form lang.project */
 	protected $wiki;
 
@@ -36,26 +39,46 @@ class ApiHelper {
 	/** @var string[] The wiki's configuration of where relevant pages live. */
 	protected $wikiConfig;
 
+	/** @var string[][] Pages queued for processing. With keys 'target' and ' */
+	protected $queue;
+
+	/** @var PageviewsRepository Repository for fetching pageviews. */
+	protected $pageviewsRepo;
+
 	/**
 	 * ApiHelper constructor.
 	 *
 	 * @param string $wiki Wiki in the format lang.project, such as en.wikipedia
 	 */
 	public function __construct( $wiki = 'en.wikipedia' ) {
+		$this->creds = parse_ini_file( 'config.ini' );
 		$this->wiki = $wiki;
 		$this->apiurl = "https://$wiki.org/w/api.php";
 		$this->api = MediawikiApi::newFromApiEndpoint( $this->apiurl );
 		$this->login();
 		$this->wikiConfig = Yaml::parseFile( __DIR__ . '/wikis.yml' )[$wiki];
+		$this->pageviewsRepo = new PageviewsRepository( $this->wiki );
+	}
+
+	private function connectDb() : void {
+		if ( isset( $this->db ) ) {
+			$this->db->close();
+		}
+
+		$this->db = new mysqli(
+			$this->creds['dbhost'],
+			$this->creds['dbuser'],
+			$this->creds['dbpass'],
+			'enwiki_p',
+			$this->creds['dbport']
+		);
 	}
 
 	/**
 	 * Log in
 	 */
 	public function login() {
-		$creds = parse_ini_file( 'config.ini' );
-		$this->creds = $creds;
-		$this->user = new ApiUser( $creds['botuser'], $creds['botpass'], $this->apiurl );
+		$this->user = new ApiUser( $this->creds['botuser'], $this->creds['botpass'], $this->apiurl );
 		$this->api->login( $this->user );
 	}
 
@@ -108,118 +131,148 @@ class ApiHelper {
 	 * Get titles & assessments for all pages in a wikiproject.
 	 *
 	 * @param string $project Name of the project, i.e. 'Medicine'
-	 * @return array
+	 * @return mysqli_result
 	 */
-	public function getProjectPages( $project ) {
+	public function getProjectPages( $project ) : mysqli_result {
 		wfLogToFile( 'Fetching pages and assessments for project ' . $project );
-		$params = [
-			'list' => 'projectpages',
-			'wppprojects' => $project,
-			'wpplimit' => 1000,
-			'wppassessments' => true
-		];
-		$result = $this->apiQuery( $params );
-		if ( isset( $result['query']['projects'][$project] ) ) {
-			$projects = $result['query']['projects'][$project];
-		} else {
-			wfLogToFile( 'Project or project pages not found. Aborting!' );
-			return [];
-		}
-		$pages = [];
-		// Loop through the pages and assessment information we got
-		foreach ( $projects as $p ) {
-			if ( $p['ns'] === 0 ) {
-				$class = ucfirst( $p['assessment']['class'] );
-				$importance = ucfirst( $p['assessment']['importance'] );
-				$pages[$p['title']] = [
-					'class' => $class == '' ? 'Unknown' : $class,
-					'importance' => $importance == '' ? 'Unknown' : $importance,
-				];
-			}
-		}
-		// Do any continuation queries that may be needed
-		while ( isset( $result['continue']['wppcontinue'] ) ) {
-			$params['wppcontinue'] = $result['continue']['wppcontinue'];
-			$result = $this->apiQuery( $params );
-			$projects = $result['query']['projects'][$project];
-			foreach ( $projects as $p ) {
-				if ( $p['ns'] === 0 ) {
-					$class = ucfirst( $p['assessment']['class'] );
-					$importance = ucfirst( $p['assessment']['importance'] );
-					$pages[$p['title']] = [
-						'class' => $class == '' ? 'Unknown' : $class,
-						'importance' => $importance == '' ? 'Unknown' : $importance,
-					];
-				}
-			}
-		}
-		wfLogToFile( 'Total number of pages fetched: ' . count( $pages ) );
-		return $pages;
+
+		$this->connectDb();
+		$stmt = $this->db->prepare( "
+			SELECT page_title, pa_class, pa_importance, (
+				SELECT rp.page_title
+				FROM page rp
+				WHERE rd_from = page_id
+				AND rp.page_namespace = 0
+			) AS redir_title
+			FROM page
+			JOIN page_assessments ON page_id = pa_page_id
+			LEFT OUTER JOIN redirect ON rd_title = page_title AND rd_namespace = 0
+			WHERE pa_project_id = (
+				SELECT pap_project_id
+				FROM page_assessments_projects
+				WHERE pap_project_title = ?
+			)
+			AND page_namespace = 0" );
+		$stmt->bind_param( 's', $project );
+		$stmt->execute();
+
+		return $stmt->get_result();
 	}
 
 	/**
-	 * Get monthly pageviews for given page and its redirects between gives dates.
+	 * Get monthly pageviews for given page and its redirects between given dates.
 	 *
-	 * @param array $pages Pages to query for.
+	 * @param mysqli_result $result
 	 * @param string $start Start date, in YYYYMMDD00 format.
 	 * @param string $end End date, in YYYYMMDD00 format.
-	 * @return array|int
+	 * @param int $limit Max number of pages to show in the report.
+	 *   This is used here only for memory management.
+	 * @return array [$out, $totalPageviews], where $out is an array with page titles as keys,
+	 *   and 'pageviews', 'class', and 'importance' as values. $totalPageviews is an integer.
 	 */
-	public function getMonthlyPageviews( $pages, $start, $end ) {
+	public function getMonthlyPageviewsAndAssessments(
+		mysqli_result $result,
+		string $start,
+		string $end,
+		int $limit
+	) {
 		wfLogToFile( 'Fetching monthly pageviews' );
-		$client = new \GuzzleHttp\Client(); // Client for our promises
-		$results = [];
 
-		foreach ( $pages as $page ) {
-			$results[$page] = 0; // Initialize with 0 views
-			// Get redirects
-			$redirects = $this->apiQuery( [
-				'titles' => $page,
-				'prop' => 'redirects',
-				'rdlimit' => 500
-			] );
-			$titles = [ $page ]; // An array to hold the main page and its redirects
-			// Extract all redirect titles
-			if ( isset( $redirects['query']['pages'][0]['redirects'] ) ) {
-				foreach ( $redirects['query']['pages'][0]['redirects'] as $r ) {
-					$titles[] = $r['title'];
-				}
-			}
-			unset( $redirects );
+		$out = [];
 
-			// Get monthly pageviews for all of the titles i.e. original page
-			// and its redirects using promises.
-			$promises = [];
-			foreach ( $titles as $title ) {
-				$url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/' . $this->wiki .
-					'/all-access/user/' . rawurlencode( $title ) . '/monthly/' . $start . '/' . $end;
-				$promise = $client->getAsync( $url );
-				$promises[] = $promise; // Add the promise for each request to promises array
-			}
-			try {
-				$responses = GuzzleHttp\Promise\settle( $promises )->wait();
-			} catch ( Exception $e ) {
-				// Ignore
-			}
-			unset( $promises, $titles );
+		/** @var array $batch Keys are the target article, values are an array of the page + redirects. */
+		$batch = [];
 
-			foreach ( $responses as $response ) {
-				if ( $response['state'] !== 'fulfilled' ) {
-					// Do nothing, API didn't have data most likely
-				} else {
-					$result = $response['value'];
-					$result = json_decode( $result->getBody()->getContents(), true );
-					if ( $result && isset( $result['items'][0]['views'] ) ) {
-						$results[$page] += (int)$result['items'][0]['views'];
-					}
-				}
+		/** @var int $batchCount How many pages (including redirects) are queued. */
+		$batchCount = 0;
+
+		$numResults = $result->num_rows;
+		$totalPageviews = 0;
+		$index = 0;
+
+		while ( $row = $result->fetch_assoc() ) {
+		    $index++;
+		    $target = str_replace( '_', ' ', $row['page_title'] );
+		    $redir = str_replace( '_', ' ', $row['redir_title'] );
+
+			// Initialize with 0 views
+		    if ( !isset( $out[$target] ) ) {
+		        $out[$target] = [
+		            'pageviews' => 0,
+					'class' => '' === $row['pa_class'] ? 'Unknown' : $row['pa_class'],
+					'importance' => '' === $row['pa_importance'] ? 'Unknown' : $row['pa_importance'],
+				];
+		    }
+
+		    // Queue up pages to be batched-processed.
+			if ( !isset( $batch[$target] ) ) {
+				// Make sure $target is in the list, too.
+				$batch[$target] = [ $target, $redir ];
+			} else {
+				// Append to existing batch.
+				$batch[$target][] = $redir;
 			}
-			unset( $responses );
+
+			// The $batchCount represents how many pages will be queried for in one go.
+			// The 60 is arbitrary. The >60 check means we might end up with 60-200 pages when we
+			// call PageviewsRepository::getPageviews(). This means we can exceed the 100 req/sec
+			// limit imposed by the API, but the retry handler will automatically slow down the
+			// script to ensure every page is processed. The 60 is just a guess at ensuring we
+			// have as close to 100 pages per run as possible.
+			if ( ++$batchCount > 60 ) {
+				wfLogToFile( "Processing page $index of $numResults" );
+
+				$this->processBatch( $batch, $out, $start, $end, $totalPageviews );
+				$batchCount = 0;
+			}
 		}
+
+		// Finish processing any leftover pages.
+		$this->processBatch( $batch, $out, $start, $end, $totalPageviews );
+
+		$result->close();
 		wfLogToFile( 'Pageviews fetch complete' );
 
-		arsort( $results );
-		return $results;
+		return [ $this->sortAndTruncatePagesList( $out, $limit ), $totalPageviews ];
+	}
+
+	private function sortAndTruncatePagesList( array $out, int $limit ) : array {
+		// Sort by pageviews descending.
+		uasort( $out, function ( $a, $b ) {
+			if ( $a['pageviews'] === $b['pageviews'] ) {
+				return 0;
+			}
+			return $a['pageviews'] > $b['pageviews'] ? -1 : 1;
+		} );
+
+		// Truncate to configured limit.
+		return array_slice( $out, 0, $limit, true );
+	}
+
+	/**
+	 * Process one batch of pages.
+	 * @param array $batch Keyed by target page, values are the target + redirects.
+	 * @param array $out
+	 * @param string $start
+	 * @param string $end
+	 * @param int $totalPageviews
+	 */
+	private function processBatch(
+		array &$batch,
+		array &$out,
+		string $start,
+		string $end,
+		int &$totalPageviews
+	) : void {
+		$batchResult = $this->pageviewsRepo->getPageviews( $batch, $start, $end );
+		foreach ( $batchResult as $title => $count ) {
+			$out[$title]['pageviews'] += $count;
+			$totalPageviews += $count;
+
+			// Clear out batch only for this title, otherwise the target page might
+			// get re-added in the next batch.
+			$batch[$title] = [];
+		}
 	}
 
 	/**
@@ -263,12 +316,11 @@ class ApiHelper {
 	 * @return array Config data.
 	 */
 	public function getJSONConfig() {
-		$api = new ApiHelper();
 		$params = [
 			'page' => $this->wikiConfig['config'],
 			'prop' => 'wikitext'
 		];
-		$res = $api->apiQuery( $params, 'parse' );
+		$res = $this->apiQuery( $params, 'parse' );
 		$config = json_decode( $res['parse']['wikitext'], true );
 
 		// Remove the 'description' entry which is meant only as explanatory text.
