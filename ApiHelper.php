@@ -33,7 +33,7 @@ class ApiHelper {
 	/** @var string[] The bot's credentials. */
 	protected $creds;
 
-	/** @var string[] Assessment configuration (colors, icons, etc.) */
+	/** @var string[][] Assessment configuration (colors, icons, etc.) */
 	protected $assessmentConfig;
 
 	/** @var string[] The wiki's configuration of where relevant pages live. */
@@ -458,7 +458,7 @@ class ApiHelper {
 	 * Get the wiki's assessment configuration from the XTools API.
 	 * This includes the colours and icons for each classification and importance level.
 	 *
-	 * @return string[]
+	 * @return string[][]
 	 */
 	public function getAssessmentConfig() {
 		if ( $this->assessmentConfig !== null ) {
