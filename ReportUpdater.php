@@ -45,13 +45,16 @@ class ReportUpdater {
 		// Setup Twig renderer.
 		$loader = new Twig_Loader_Filesystem( __DIR__ . '/views' );
 		$this->twig = new Twig_Environment( $loader );
+		$this->addTwigFunctions();
 
 		// Setup Intuition.
 		$this->i18n = new Intuition( 'popular-pages' );
 		$this->i18n->registerDomain( 'popular-pages', __DIR__ . '/messages' );
 		$this->i18n->setLang( explode( '.', $wiki )[0] );
+	}
 
-		// Set up msg function in Twig.
+	private function addTwigFunctions() : void {
+		// msg() function for i18n.
 		$msgFunc = new Twig_SimpleFunction( 'msg', function ( $key, $params = [] ) {
 			$params = is_array( $params ) ? $params : [];
 			return $this->i18n->msg(
@@ -59,6 +62,27 @@ class ReportUpdater {
 			);
 		} );
 		$this->twig->addFunction( $msgFunc );
+
+		// Fetching assessments info, case-insensitive.
+		$assessmentFunc = new Twig_SimpleFunction(
+		    'assessments', function (
+				string $type, string $value
+			) {
+				$dataset = $this->api->getAssessmentConfig()[$type];
+				foreach ( $dataset as $key => $values ) {
+					if ( strtolower( $value ) === strtolower( $key ) ) {
+						return $values;
+					}
+				}
+				return $dataset['Unknown'];
+			   } );
+		$this->twig->addFunction( $assessmentFunc );
+
+		// Add ucfirst() (Twig's capitalize() will make the other chars lowercase).
+		$ucfirstFunc = new Twig_SimpleFilter( 'ucfirst', function ( string $value ) {
+		    return ucfirst( $value );
+		} );
+		$this->twig->addFilter( $ucfirstFunc );
 	}
 
 	/**
@@ -138,7 +162,6 @@ class ReportUpdater {
 			'project' => $project,
 			'pages' => $data,
 			'totalViews' => $totalViews,
-			'assessments' => $this->api->getAssessmentConfig(),
 			'category' => $this->api->getWikiConfig()['category'],
 		] );
 
