@@ -21,7 +21,7 @@
 {% for title, data in pages %}
 | {{ loop.index }}
 | [[{{ title }}]]
-| [https://pageviews.toolforge.org/?project={{ wiki }}.org&amp;start={{ start|date('Y-m-d') }}&amp;end={{ end|date('Y-m-d') }}&amp;page={{ title|replace({' ': '_'}) }}&amp;redirects=1 {% verbatim %}{{FORMATNUM:{% endverbatim %}{{ data.pageviews }}}}]
+| [https://pageviews.toolforge.org/?project={{ wiki }}.org&amp;start={{ start|date('Y-m-d') }}&amp;end={{ end|date('Y-m-d') }}&amp;pages={{ title|replace({' ': '_'}) }}&amp;redirects=1 {% verbatim %}{{FORMATNUM:{% endverbatim %}{{ data.pageviews }}}}]
 | {% verbatim %}{{FORMATNUM:{% endverbatim %}{{ data.avgPageviews }}}}
 | style="text-align:center; white-space:nowrap; font-weight:bold; background:{{ assessments('class', data.class).color }}" | [[:{{ assessments('class', data.class).category }}|{{ data.class|ucfirst }}]]
 | style="text-align:center; white-space:nowrap; font-weight:bold; background:{{ assessments('importance', data.importance).color }}" | [[:{{ assessments('importance', data.class).category }}|{{ data.importance|ucfirst }}]]
