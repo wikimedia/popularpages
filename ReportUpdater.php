@@ -123,6 +123,7 @@ class ReportUpdater {
 		$pageStmt = $this->api->getProjectPages( $config['Name'] );
 
 		if ( 0 === $pageStmt->num_rows ) {
+			wfLogToFile( "No pages found for \"$project\"" );
 			return;
 		}
 

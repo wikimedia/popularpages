@@ -289,7 +289,7 @@ class ApiHelper {
 		}
 		$session = new MediawikiSession( $this->api );
 		$token = $session->getToken( 'edit' );
-		wfLogToFile( 'Attempting to update wikipedia page' );
+		wfLogToFile( "Attempting to update \"$page\"" );
 		$params = [
 			'title' => $page,
 			'text' => $text,
@@ -301,11 +301,20 @@ class ApiHelper {
 			$params['section'] = $section;
 		}
 
-		$result = $this->apiQuery( $params, 'edit', 'post' );
+		$result = null;
+		try {
+			$result = $this->apiQuery( $params, 'edit', 'post' );
+		} catch ( Exception $e ) {
+			// Silently fail, otherwise this could break this halts execution
+			// and the bot fails to update all subsequent reports.
+			// The below messaging is enough for debugging purposes, as we can
+			// run generateReport.php on the one that failed to see what went wrong.
+		}
+
 		if ( $result ) {
-			wfLogToFile( 'Page ' . $page . ' updated' );
+			wfLogToFile( "\"$page\" updated" );
 		} else {
-			wfLogToFile( 'Page ' . $page . ' could not be updated' );
+			wfLogToFile( "\"$page\" could not be updated" );
 		}
 		return $result;
 	}
