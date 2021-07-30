@@ -13,6 +13,8 @@
 	"index-page-header-1": "The table below is the wikitext-table representation of the config used for generating Popular pages for WikiProjects.",
 	"index-page-header-2": "The actual configuration can be found at $1.",
 	"index-page-overriden": "All edits will be overwritten the next time bot updates this page.",
+	"index-page-help": "Is your project not updating? Refer to the $1.",
+	"index-page-help-link": "troubleshooting tips",
 	"limit": "Limit",
 	"list": "List",
 	"list-of-projects": "List of WikiProjects",

@@ -3,6 +3,9 @@
 
 '''{{ msg('index-page-dont-edit') }}'''. {{ msg('index-page-overriden') }}
 
+{% set helpLink %}[[meta:Special:MyLanguage/Community Tech/Popular pages bot#Troubleshooting|{{ msg('index-page-help-link') }}]]{% endset %}
+{{ msg('index-page-help', [helpLink]) }}
+
 -- ~~~~
 
 == {{ msg('list-of-projects') }} ==
