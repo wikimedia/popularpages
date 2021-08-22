@@ -1,1 +1,34 @@
-
+{
+	"@metadata": {
+		"authors": [
+			"MusikAnimal"
+      , "Wahrani"
+		]
+	},
+	"assessment": "Assessment",
+	"config-subpage": "Popular pages config",
+	"daily-average": "المتوسط اليومي",
+	"date-range": "$1 إلى $2",
+	"importance": "الأهمية",
+	"index-page-dont-edit": "رجاءا لا تعدل هذه الصفحة",
+	"index-page-header-1": "The table below is the wikitext-table representation of the config used for generating Popular pages for WikiProjects.",
+	"index-page-header-2": "The actual configuration can be found at $1.",
+	"index-page-overriden": "All edits will be overwritten the next time bot updates this page.",
+	"index-page-help": "Is your project not updating? Refer to the $1.",
+	"index-page-help-link": "troubleshooting tips",
+	"limit": "الحدود",
+	"list": "القائمة",
+	"list-of-projects": "قائمة المشاريع",
+	"page-title": "العنوان",
+	"period": "الفترة",
+	"popular-pages": "Popular pages",
+	"rank": "المرتبة",
+	"report": "التقرير",
+	"report-bug": "To report bugs, please write on the [[meta:User talk:Community Tech bot|Community tech bot]] talk page on Meta.",
+	"report-comment": "Changes made below this line will be overwritten on the next update.",
+	"report-header": "This is a list of pages in the scope of $1 along with their pageviews, including all redirects.",
+	"total-views": "مجموع الزيارات",
+	"updated": "تاريخ التحديث",
+	"views": "الزيارات",
+	"wikiproject": "مشروع ويكي"
+}
