@@ -1,2 +1,6 @@
 botuser = 'ExampleBot'
-botpass = 'XXXXX'
+botpass = '****'
+dbuser='ExampleDBUser'
+dbpass='****'
+db='enwiki_p'
+dbhost='enwiki.labsdb'
