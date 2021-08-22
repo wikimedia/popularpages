@@ -66,10 +66,10 @@ class ApiHelper {
 		}
 
 		$this->db = new mysqli(
-			$this->creds['dbhost'],
-			$this->creds['dbuser'],
-			$this->creds['dbpass'],
-			'enwiki_p',
+                        $this->creds['dbhost'],
+                        $this->creds['dbuser'],
+                        $this->creds['dbpass'],
+                        $this->creds['db'],   /*enwiki_p,*/
 			$this->creds['dbport']
 		);
 	}
