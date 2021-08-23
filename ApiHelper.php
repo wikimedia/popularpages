@@ -283,7 +283,7 @@ class ApiHelper {
 	 * @param bool|int $section section to update on the page
 	 * @return array|\GuzzleHttp\Promise\PromiseInterface
 	 */
-	public function setText( $page, $text, $section = false ) {
+	public function setText( $page, $text, $summary = false, $section = false ) {
 		if ( !$this->api->isLoggedin() ) {
 			$this->login();
 		}
@@ -293,7 +293,7 @@ class ApiHelper {
 		$params = [
 			'title' => $page,
 			'text' => $text,
-			'summary' => 'Popular pages report update',
+			'summary' => $summary ? $summary:'Popular pages report update',
 			'token' => $token,
 			'bot' => true
 		];
