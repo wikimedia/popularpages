@@ -166,7 +166,7 @@ class ReportUpdater {
 			'category' => $this->api->getWikiConfig()['category'],
 		] );
 
-		$this->api->setText( $config['Report'], $output, (int)$hasLeadSection );
+		$this->api->setText( $config['Report'], $output, $this->i18n->msg('edit-summary'), (int)$hasLeadSection );
 	}
 
 	/**
