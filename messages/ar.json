@@ -1,10 +1,10 @@
 {
 	"@metadata": {
 		"authors": [
-			"MusikAnimal"
-			, "Wahrani"
-			, "FShbib"
-			, "Michel Bakni"
+			"MusikAnimal",
+			"Wahrani",
+			"FShbib",
+			"Michel Bakni"
 		]
 	},
 	"assessment": "الجودة",
@@ -33,6 +33,5 @@
 	"updated": "تاريخ التحديث",
 	"views": "المشاهدات",
 	"wikiproject": "مشروع ويكي",
-	"edit-summary" : "تحديث تقرير الصفحات الأكثر مشاهدة" ,
-        "unknown":"غير معروفة"
+	"edit-summary" : "تحديث تقرير الصفحات الأكثر مشاهدة" 
 }
