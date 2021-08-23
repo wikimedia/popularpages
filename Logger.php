@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * @author Niharika Kohli <nkohli@wikimedia.org>
+ * @author    Niharika Kohli <nkohli@wikimedia.org>
  * @copyright © 2016 Niharika Kohli and contributors.
  */
 
@@ -25,8 +25,9 @@
  *
  * @param string $message Message to record in file
  */
-function wfLogToFile( $message ) {
-	$file = fopen( 'log.txt', 'a' );
-	$output = date( 'Y-m-d H:i:s' ) . '  ' . $message;
-	fwrite( $file, $output . PHP_EOL );
+function wfLogToFile( $message ) 
+{
+    $file = fopen('log.txt', 'a');
+    $output = date('Y-m-d H:i:s') . '  ' . $message;
+    fwrite($file, $output . PHP_EOL);
 }
