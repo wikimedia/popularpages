@@ -92,7 +92,7 @@ class ApiHelper
             $this->creds['dbhost'],
             $this->creds['dbuser'],
             $this->creds['dbpass'],
-            $this->creds['db'],   /*enwiki_p,*/
+            $this->creds['db'],
             $this->creds['dbport']
         );
     }
