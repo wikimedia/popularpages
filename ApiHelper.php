@@ -331,7 +331,7 @@ class ApiHelper
         $params = [
         'title' => $page,
         'text' => $text,
-        'summary' => $summary ? $summary:'Popular pages report update',
+        'summary' => $summary ?? 'Popular pages report update',
         'token' => $token,
         'bot' => true
         ];
