@@ -1,6 +1,6 @@
 Popular Pages
 =============
-[![Build Status](https://travis-ci.org/wikimedia/popularpages.svg?branch=master)](https://travis-ci.org/wikimedia/popularpages)
+![CI](https://github.com/wikimedia/popularpages/workflows/CI/badge.svg)
 
 A tool for generating monthly popular pages reports for WikiProjects.
 
