@@ -69,7 +69,7 @@ class ApiHelper {
 			$this->creds['dbhost'],
 			$this->creds['dbuser'],
 			$this->creds['dbpass'],
-			'enwiki_p',
+			$this->creds['db'],
 			$this->creds['dbport']
 		);
 	}
@@ -280,10 +280,16 @@ class ApiHelper {
 	 *
 	 * @param string $page Page to set text for
 	 * @param string $text Text to set on the page
-	 * @param bool|int $section section to update on the page
+	 * @param string|null $summary Edit summary
+	 * @param bool $section section to update on the page
 	 * @return array|\GuzzleHttp\Promise\PromiseInterface
 	 */
-	public function setText( $page, $text, $section = false ) {
+	public function setText(
+		string $page,
+		string $text,
+		?string $summary = null,
+		bool $section = false
+	) {
 		if ( !$this->api->isLoggedin() ) {
 			$this->login();
 		}
@@ -293,7 +299,7 @@ class ApiHelper {
 		$params = [
 			'title' => $page,
 			'text' => $text,
-			'summary' => 'Popular pages report update',
+			'summary' => $summary ?? 'Popular pages report update',
 			'token' => $token,
 			'bot' => true
 		];
