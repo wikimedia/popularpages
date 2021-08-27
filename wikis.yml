@@ -7,3 +7,13 @@ en.wikipedia:
 
     # The category that the individual reports should be placed in.
     category: 'Category:Lists of popular pages by WikiProject'
+
+ar.wikipedia:
+    # The 'index' page, which lists all the configured WikiProjects in a formatted table.
+    index: 'ويكيبيديا:قائمة الصفحات الأكثر مشاهدة حسب مشروع الويكي'
+
+    # The configuration page, where you add configuration for individual WikiProjects.
+    config: 'User:Community Tech bot/Popular pages config.json'
+
+    # The category that the individual reports should be placed in.
+    category: 'تصنيف:قائمة الصفحات الأكثر مشاهدة حسب مشروع الويكي'
