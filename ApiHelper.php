@@ -51,12 +51,15 @@ class ApiHelper {
 	 * @param string $wiki Wiki in the format lang.project, such as en.wikipedia
 	 */
 	public function __construct( $wiki = 'en.wikipedia' ) {
+		$this->wikiConfig = Yaml::parseFile( __DIR__ . '/wikis.yml' )[$wiki];
 		$this->creds = parse_ini_file( 'config.ini' );
+		$this->creds['db'] = $this->wikiConfig['db'] ?? ($this->creds['db'] ?? 'enwiki_p')
+
 		$this->wiki = $wiki;
 		$this->apiurl = "https://$wiki.org/w/api.php";
 		$this->api = MediawikiApi::newFromApiEndpoint( $this->apiurl );
 		$this->login();
-		$this->wikiConfig = Yaml::parseFile( __DIR__ . '/wikis.yml' )[$wiki];
+		
 		$this->pageviewsRepo = new PageviewsRepository( $this->wiki );
 	}
 
