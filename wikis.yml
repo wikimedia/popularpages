@@ -1,4 +1,6 @@
 en.wikipedia:
+    #select the database
+    db: 'enwiki_p'
     # The 'index' page, which lists all the configured WikiProjects in a formatted table.
     index: 'User:Community Tech bot/Popular pages'
 
@@ -9,6 +11,8 @@ en.wikipedia:
     category: 'Category:Lists of popular pages by WikiProject'
 
 ar.wikipedia:
+    #select the database
+    db: 'arwiki_p'
     # The 'index' page, which lists all the configured WikiProjects in a formatted table.
     index: 'ويكيبيديا:قائمة الصفحات الأكثر مشاهدة حسب مشروع الويكي'
 
