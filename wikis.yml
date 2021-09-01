@@ -7,3 +7,6 @@ en.wikipedia:
 
     # The category that the individual reports should be placed in.
     category: 'Category:Lists of popular pages by WikiProject'
+
+    # The name of the database (without the trailing _p).
+    database: enwiki

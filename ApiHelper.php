@@ -3,6 +3,7 @@
  * This file contains only the ApiHelper class.
  */
 
+use Krinkle\Intuition\Intuition;
 use Mediawiki\Api\ApiUser;
 use Mediawiki\Api\FluentRequest;
 use Mediawiki\Api\MediawikiApi;
@@ -45,12 +46,15 @@ class ApiHelper {
 	/** @var PageviewsRepository Repository for fetching pageviews. */
 	protected $pageviewsRepo;
 
+	/** @var Intuition Instance of Intuition translation service. */
+	protected $i18n;
+
 	/**
 	 * ApiHelper constructor.
 	 *
 	 * @param string $wiki Wiki in the format lang.project, such as en.wikipedia
 	 */
-	public function __construct( $wiki = 'en.wikipedia' ) {
+	public function __construct( string $wiki = 'en.wikipedia' ) {
 		$this->creds = parse_ini_file( 'config.ini' );
 		$this->wiki = $wiki;
 		$this->apiurl = "https://$wiki.org/w/api.php";
@@ -58,6 +62,21 @@ class ApiHelper {
 		$this->login();
 		$this->wikiConfig = Yaml::parseFile( __DIR__ . '/wikis.yml' )[$wiki];
 		$this->pageviewsRepo = new PageviewsRepository( $this->wiki );
+
+		// Setup Intuition.
+		$this->i18n = new Intuition( 'popular-pages' );
+		$this->i18n->registerDomain( 'popular-pages', __DIR__ . '/messages' );
+		$this->i18n->setLang( explode( '.', $wiki )[0] );
+	}
+
+	/**
+	 * Getter for the Intuitions service, which is instantiated in this class.
+	 * In lieu of proper dependency injection, this provides a way for other classes
+	 * to access the same Intuition instance.
+	 * @return Intuition
+	 */
+	public function getI18n() : Intuition {
+		return $this->i18n;
 	}
 
 	private function connectDb() : void {
@@ -65,11 +84,16 @@ class ApiHelper {
 			$this->db->close();
 		}
 
+		// In production, the host is *.web.db.svc.wikimedia.cloud, where the asterisk
+		// is dynamically replaced with the database name.
+		$db = str_replace( '_p', '', $this->wikiConfig['database'] );
+		$host = str_replace( '*', $db, $this->creds['dbhost'] );
+
 		$this->db = new mysqli(
-			$this->creds['dbhost'],
+			$host,
 			$this->creds['dbuser'],
 			$this->creds['dbpass'],
-			$this->creds['db'],
+			$db . '_p',
 			$this->creds['dbport']
 		);
 	}
@@ -191,20 +215,21 @@ class ApiHelper {
 		$index = 0;
 
 		while ( $row = $result->fetch_assoc() ) {
-		    $index++;
-		    $target = str_replace( '_', ' ', $row['page_title'] );
-		    $redir = str_replace( '_', ' ', $row['redir_title'] );
+			$index++;
+			$target = str_replace( '_', ' ', $row['page_title'] );
+			$redir = str_replace( '_', ' ', $row['redir_title'] );
 
 			// Initialize with 0 views
-		    if ( !isset( $out[$target] ) ) {
-		        $out[$target] = [
-		            'pageviews' => 0,
-					'class' => '' === $row['pa_class'] ? 'Unknown' : $row['pa_class'],
-					'importance' => '' === $row['pa_importance'] ? 'Unknown' : $row['pa_importance'],
+			if ( !isset( $out[$target] ) ) {
+				$unknownMsg = $this->i18n->msg( 'unknown' );
+				$out[$target] = [
+					'pageviews' => 0,
+					'class' => '' === $row['pa_class'] ? $unknownMsg : $row['pa_class'],
+					'importance' => '' === $row['pa_importance'] ? $unknownMsg : $row['pa_importance'],
 				];
-		    }
+			}
 
-		    // Queue up pages to be batched-processed.
+			// Queue up pages to be batched-processed.
 			if ( !isset( $batch[$target] ) ) {
 				// Make sure $target is in the list, too.
 				$batch[$target] = [ $target, $redir ];

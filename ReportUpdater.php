@@ -34,9 +34,11 @@ class ReportUpdater {
 	 *
 	 * @param string $wiki Target wiki in the format lang.project, such as 'en.wikipedia'.
 	 */
-	public function __construct( $wiki = 'en.wikipedia' ) {
+	public function __construct( string $wiki = 'en.wikipedia' ) {
+		// Instantiate the ApiHelper.
 		$this->api = new ApiHelper( $wiki );
 		$this->wiki = $wiki;
+		$this->i18n = $this->api->getI18n();
 
 		// Set dates for the previous month.
 		$this->start = strtotime( 'first day of previous month' );
@@ -65,7 +67,7 @@ class ReportUpdater {
 
 		// Fetching assessments info, case-insensitive.
 		$assessmentFunc = new Twig_SimpleFunction(
-		    'assessments', function (
+			'assessments', function (
 				string $type, string $value
 			) {
 				$dataset = $this->api->getAssessmentConfig()[$type];
@@ -75,12 +77,12 @@ class ReportUpdater {
 					}
 				}
 				return $dataset['Unknown'];
-			   } );
+			} );
 		$this->twig->addFunction( $assessmentFunc );
 
 		// Add ucfirst() (Twig's capitalize() will make the other chars lowercase).
 		$ucfirstFunc = new Twig_SimpleFilter( 'ucfirst', function ( string $value ) {
-		    return ucfirst( $value );
+			return ucfirst( $value );
 		} );
 		$this->twig->addFilter( $ucfirstFunc );
 	}
@@ -90,7 +92,7 @@ class ReportUpdater {
 	 *
 	 * @param array $config The JSON config from the wiki page
 	 */
-	public function updateReports( $config ) {
+	public function updateReports( array $config ) {
 		// Make sure config isn't empty
 		if ( !is_array( $config ) || count( $config ) < 1 ) {
 			wfLogToFile( 'Error: Invalid config. Aborting!' );
@@ -115,10 +117,10 @@ class ReportUpdater {
 	/**
 	 * Process an individual WikiProject and update its popular pages report.
 	 *
-	 * @param  string $project
-	 * @param  array $config As specified in the on-wiki JSON config.
+	 * @param string $project
+	 * @param array $config As specified in the on-wiki JSON config.
 	 */
-	private function processProject( $project, $config ) : void {
+	private function processProject( string $project, array $config ) : void {
 		/** @var mysqli_result $pageStmt */
 		$pageStmt = $this->api->getProjectPages( $config['Name'] );
 
@@ -206,7 +208,7 @@ class ReportUpdater {
 	 * @param array $config The WikiProject's configuration.
 	 * @return bool true if valid, false otherwise.
 	 */
-	private function validateProjectConfig( $project, $config ) {
+	private function validateProjectConfig( string $project, array $config ) {
 		// Check that config values are set
 		if ( !isset( $config['Name'] ) || !isset( $config['Limit'] ) || !isset( $config['Report'] ) ) {
 			wfLogToFile( 'Error: Incomplete data in config for ' . $project . '. Skipping.' );
