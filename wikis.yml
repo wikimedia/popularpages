@@ -1,4 +1,7 @@
 en.wikipedia:
+    # The name of the database (without the trailing _p).
+    database: enwiki
+
     # The 'index' page, which lists all the configured WikiProjects in a formatted table.
     index: 'User:Community Tech bot/Popular pages'
 
@@ -8,5 +11,8 @@ en.wikipedia:
     # The category that the individual reports should be placed in.
     category: 'Category:Lists of popular pages by WikiProject'
 
-    # The name of the database (without the trailing _p).
-    database: enwiki
+ar.wikipedia:
+    database: arwiki
+    index: 'User:Community Tech bot/Popular pages'
+    config: 'User:Community Tech bot/Popular pages config.json'
+    category: 'تصنيف:قائمة الصفحات الأكثر مشاهدة حسب مشروع الويكي'
