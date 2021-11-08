@@ -30,7 +30,10 @@ include_once 'vendor/autoload.php';
 
 $api = new ApiHelper( $argv[1] );
 
-wfLogToFile( 'Running script to generate report for project ' . $argv[2] . ' on ' . $argv[1] );
+wfLogToFile(
+	'Running script to generate report for project ' . $argv[2] . ' on ' . $argv[1],
+	$argv[1]
+);
 
 $projectConfig = $api->getProject( $argv[2] );
 

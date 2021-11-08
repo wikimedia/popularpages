@@ -95,7 +95,7 @@ class ReportUpdater {
 	public function updateReports( array $config ) {
 		// Make sure config isn't empty
 		if ( !is_array( $config ) || count( $config ) < 1 ) {
-			wfLogToFile( 'Error: Invalid config. Aborting!' );
+			wfLogToFile( 'Error: Invalid config. Aborting!', $this->wiki );
 			return;
 		}
 
@@ -107,7 +107,7 @@ class ReportUpdater {
 			// Generate and save the report.
 			$this->processProject( $project, $projectConfig );
 
-			wfLogToFile( 'Finished processing: ' . $projectConfig['Name'] );
+			wfLogToFile( 'Finished processing: ' . $projectConfig['Name'], $this->wiki );
 		}
 
 		// Update index page.
@@ -125,12 +125,12 @@ class ReportUpdater {
 		$pageStmt = $this->api->getProjectPages( $config['Name'] );
 
 		if ( 0 === $pageStmt->num_rows ) {
-			wfLogToFile( "No pages found for \"$project\"" );
+			wfLogToFile( "No pages found for \"$project\"", $this->wiki );
 			return;
 		}
 
 		if ( $pageStmt->num_rows > 1000000 ) { // See T164178
-			wfLogToFile( 'Error: ' . $project . ' is too large. Skipping.' );
+			wfLogToFile( 'Error: ' . $project . ' is too large. Skipping.', $this->wiki );
 			return;
 		}
 
@@ -211,21 +211,24 @@ class ReportUpdater {
 	private function validateProjectConfig( string $project, array $config ) {
 		// Check that config values are set
 		if ( !isset( $config['Name'] ) || !isset( $config['Limit'] ) || !isset( $config['Report'] ) ) {
-			wfLogToFile( 'Error: Incomplete data in config for ' . $project . '. Skipping.' );
+			wfLogToFile( 'Error: Incomplete data in config for ' . $project . '. Skipping.', $this->wiki );
 			return false;
 		}
 
 		// Don't allow writing report to main namespace. There is no easy way to grab the
 		// namespace ID so just reject titles that don't have a colon in them.
 		if ( false === strpos( $config['Report'], ':' ) ) {
-			wfLogToFile( "Error: $project is configured to write to the mainspace. Skipping." );
+			wfLogToFile( "Error: $project is configured to write to the mainspace. Skipping.", $this->wiki );
 			return false;
 		}
-		wfLogToFile( 'Beginning to process: ' . $config['Name'] );
+		wfLogToFile( 'Beginning to process: ' . $config['Name'], $this->wiki );
 
 		// Check the project exists
 		if ( !$this->api->doesTitleExist( $project ) ) {
-			wfLogToFile( 'Error: Project page for ' . $config['Name'] . ' does not exist! Skipping.' );
+			wfLogToFile(
+				'Error: Project page for ' . $config['Name'] . ' does not exist! Skipping.',
+				$this->wiki
+			);
 			return false;
 		}
 

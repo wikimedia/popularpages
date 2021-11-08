@@ -54,7 +54,7 @@ class PageviewsRepository {
 				$response->getStatusCode(),
 				number_format( $delay, 2 )
 			);
-			wfLogToFile( $msg );
+			wfLogToFile( $msg, $this->domain );
 		};
 
 		$this->client = new Client( [

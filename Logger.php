@@ -24,9 +24,10 @@
  * Log given message to file
  *
  * @param string $message Message to record in file
+ * @param string $wiki
  */
-function wfLogToFile( $message ) {
-	$file = fopen( 'log.txt', 'a' );
+function wfLogToFile( string $message, string $wiki ) {
+	$file = fopen( "log-$wiki.txt", 'a' );
 	$output = date( 'Y-m-d H:i:s' ) . '  ' . $message;
 	fwrite( $file, $output . PHP_EOL );
 }

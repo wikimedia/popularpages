@@ -158,7 +158,7 @@ class ApiHelper {
 	 * @return mysqli_result
 	 */
 	public function getProjectPages( $project ) : mysqli_result {
-		wfLogToFile( 'Fetching pages and assessments for project ' . $project );
+		wfLogToFile( 'Fetching pages and assessments for project ' . $project, $this->wiki );
 
 		$this->connectDb();
 		$stmt = $this->db->prepare( "
@@ -200,7 +200,7 @@ class ApiHelper {
 		string $end,
 		int $limit
 	) {
-		wfLogToFile( 'Fetching monthly pageviews' );
+		wfLogToFile( 'Fetching monthly pageviews', $this->wiki );
 
 		$out = [];
 
@@ -245,7 +245,7 @@ class ApiHelper {
 			// script to ensure every page is processed. The 60 is just a guess at ensuring we
 			// have as close to 100 pages per run as possible.
 			if ( ++$batchCount > 60 ) {
-				wfLogToFile( "Processing page $index of $numResults" );
+				wfLogToFile( "Processing page $index of $numResults", $this->wiki );
 
 				$this->processBatch( $batch, $out, $start, $end, $totalPageviews );
 				$batchCount = 0;
@@ -256,7 +256,7 @@ class ApiHelper {
 		$this->processBatch( $batch, $out, $start, $end, $totalPageviews );
 
 		$result->close();
-		wfLogToFile( 'Pageviews fetch complete' );
+		wfLogToFile( 'Pageviews fetch complete', $this->wiki );
 
 		return [ $this->sortAndTruncatePagesList( $out, $limit ), $totalPageviews ];
 	}
@@ -320,7 +320,7 @@ class ApiHelper {
 		}
 		$session = new MediawikiSession( $this->api );
 		$token = $session->getToken( 'edit' );
-		wfLogToFile( "Attempting to update \"$page\"" );
+		wfLogToFile( "Attempting to update \"$page\"", $this->wiki );
 		$params = [
 			'title' => $page,
 			'text' => $text,
@@ -343,9 +343,9 @@ class ApiHelper {
 		}
 
 		if ( $result ) {
-			wfLogToFile( "\"$page\" updated" );
+			wfLogToFile( "\"$page\" updated", $this->wiki );
 		} else {
-			wfLogToFile( "\"$page\" could not be updated" );
+			wfLogToFile( "\"$page\" could not be updated", $this->wiki );
 		}
 		return $result;
 	}
@@ -463,14 +463,14 @@ class ApiHelper {
 					$res = $this->api->getRequestAsync( $factory );
 				} catch ( Exception $e ) {
 					// Uh oh, we got an exception, let's log it and retry.
-					wfLogToFile( 'Exception caught during API request: ' . $e->getMessage() );
+					wfLogToFile( 'Exception caught during API request: ' . $e->getMessage(), $this->wiki );
 					$res = $this->api->getRequestAsync( $factory );
 				}
 			} else {
 				try {
 					$res = $this->api->getRequest( $factory );
 				} catch ( Exception $e ) {
-					wfLogToFile( 'Exception caught during API request: ' . $e->getMessage() );
+					wfLogToFile( 'Exception caught during API request: ' . $e->getMessage(), $this->wiki );
 					$res = $this->api->getRequest( $factory );
 				}
 			}
@@ -479,14 +479,14 @@ class ApiHelper {
 				try {
 					$res = $this->api->postRequestAsync( $factory );
 				} catch ( Exception $e ) {
-					wfLogToFile( 'Exception caught during API request: ' . $e->getMessage() );
+					wfLogToFile( 'Exception caught during API request: ' . $e->getMessage(), $this->wiki );
 					$res = $this->api->postRequestAsync( $factory );
 				}
 			} else {
 				try {
 					$res = $this->api->postRequest( $factory );
 				} catch ( Exception $e ) {
-					wfLogToFile( 'Exception caught during API request: ' . $e->getMessage() );
+					wfLogToFile( 'Exception caught during API request: ' . $e->getMessage(), $this->wiki );
 					$res = $this->api->postRequest( $factory );
 				}
 			}

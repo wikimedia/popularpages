@@ -25,11 +25,11 @@ date_default_timezone_set( 'UTC' );
 
 $api = new ApiHelper( $argv[1] );
 
-wfLogToFile( 'Beginning new cycle' );
+wfLogToFile( 'Beginning new cycle', $argv[1] );
 
 $notUpdated = $api->getStaleProjects();
 
-wfLogToFile( 'Number of projects pending update: ' . count( $notUpdated ) );
+wfLogToFile( 'Number of projects pending update: ' . count( $notUpdated ), $argv[1] );
 
 // Instantiate a new ReportUpdater with projects not updated yet
 $updater = new ReportUpdater( $argv[1] );
