@@ -13,6 +13,6 @@ en.wikipedia:
 
 ar.wikipedia:
     database: arwiki
-    index: 'User:Community Tech bot/Popular pages'
-    config: 'User:Community Tech bot/Popular pages config.json'
+    index: 'ويكيبيديا:قائمة الصفحات الأكثر مشاهدة حسب مشروع الويكي'
+    config: 'ويكيبيديا:قائمة الصفحات الأكثر مشاهدة حسب مشروع الويكي/الإعدادات.json'
     category: 'تصنيف:قائمة الصفحات الأكثر مشاهدة حسب مشروع الويكي'
