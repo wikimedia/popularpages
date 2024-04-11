@@ -19,13 +19,13 @@ See [the tool's homepage](https://wikitech.wikimedia.org/wiki/Tool:Popular_Pages
 ##### App structure:
 * **`checkReports.php`**: Starting point for a new bot run. Gets config info for all projects not already updated for past month and then passes it to `ReportUpdater`.
 * **`ReportUpdater.php`**: The file that actually updates projects.
-* **`ApiHelper.php`**: Contains all helper functions for dealing with the API and Database (bit of a misnomer).
+* **`WikiRepository.php`**: Contains all helper functions for dealing with the API and Database (bit of a misnomer).
 * **`Logger.php`**: Responsible for logging updates to `log.txt`.
 * **`generateReport.php`**: Script to manually regenerate a report for a single project.
 * **`generateIndex.php`**: Script for generating the index page.
 
 ##### Setting up a new wiki
 * Make sure the translations for the language are in the /messages directory.
-* Add the configuration for the project in `wikis.yml`. This indicates where the WikiProjects configuration and index pages live.
+* Add the configuration for the project in `wikis.yaml`. This indicates where the WikiProjects configuration and index pages live.
 * Add your WikiProjects configuration on the corresponding on-wiki JSON page.
 * Add a new cron job for the wiki, such as `0 0 1 * * checkReports.php en.wikipedia`.

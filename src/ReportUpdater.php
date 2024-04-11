@@ -1,9 +1,10 @@
 <?php
-/**
- * This file contains only the ReportUpdater class.
- */
 
 use Krinkle\Intuition\Intuition;
+use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
+use Twig\TwigFilter;
+use Twig\TwigFunction;
 
 /**
  * A ReportUpdater is responsible for creating a report for one or more
@@ -11,53 +12,54 @@ use Krinkle\Intuition\Intuition;
  */
 class ReportUpdater {
 
-	/** @var ApiHelper ApiHelper instance. */
-	protected $api;
+	/** @var WikiRepository WikiRepository instance. */
+	protected WikiRepository $wikiRepository;
 
 	/** @var string Target wiki such as 'en.wikipedia'. */
-	protected $wiki;
+	protected string $wiki;
 
 	/** @var int Unix timestamp of start date. */
-	protected $start;
+	protected int $start;
 
 	/** @var int Unix timestamp of end date. */
-	protected $end;
+	protected int $end;
 
-	/** @var Twig_Environment The Twig rendering engine. */
-	private $twig;
+	/** @var Environment The Twig rendering engine. */
+	private Environment $twig;
 
 	/** @var Intuition Instance of Intuition translation service. */
-	private $i18n;
+	private Intuition $i18n;
 
 	/**
 	 * ReportUpdater constructor.
 	 *
 	 * @param string $wiki Target wiki in the format lang.project, such as 'en.wikipedia'.
+	 * @param bool $dryRun Set to print output to stdout instead of saving to the wiki.
 	 */
-	public function __construct( string $wiki = 'en.wikipedia' ) {
-		// Instantiate the ApiHelper.
-		$this->api = new ApiHelper( $wiki );
+	public function __construct( string $wiki = 'en.wikipedia', bool $dryRun = false ) {
+		// Instantiate the WikiRepository.
+		$this->wikiRepository = new WikiRepository( $wiki, $dryRun );
 		$this->wiki = $wiki;
-		$this->i18n = $this->api->getI18n();
+		$this->i18n = $this->wikiRepository->getI18n();
 
 		// Set dates for the previous month.
 		$this->start = strtotime( 'first day of previous month' );
 		$this->end = strtotime( 'last day of previous month' );
 
 		// Setup Twig renderer.
-		$loader = new Twig_Loader_Filesystem( __DIR__ . '/views' );
-		$this->twig = new Twig_Environment( $loader );
+		$loader = new FilesystemLoader( __DIR__ . '/../views' );
+		$this->twig = new Environment( $loader );
 		$this->addTwigFunctions();
 
 		// Setup Intuition.
 		$this->i18n = new Intuition( 'popular-pages' );
-		$this->i18n->registerDomain( 'popular-pages', __DIR__ . '/messages' );
+		$this->i18n->registerDomain( 'popular-pages', __DIR__ . '/../messages' );
 		$this->i18n->setLang( explode( '.', $wiki )[0] );
 	}
 
-	private function addTwigFunctions() : void {
+	private function addTwigFunctions(): void {
 		// msg() function for i18n.
-		$msgFunc = new Twig_SimpleFunction( 'msg', function ( $key, $params = [] ) {
+		$msgFunc = new TwigFunction( 'msg', function ( $key, $params = [] ) {
 			$params = is_array( $params ) ? $params : [];
 			return $this->i18n->msg(
 				$key, [ 'domain' => 'popular-pages', 'variables' => $params ]
@@ -66,11 +68,11 @@ class ReportUpdater {
 		$this->twig->addFunction( $msgFunc );
 
 		// Fetching assessments info, case-insensitive.
-		$assessmentFunc = new Twig_SimpleFunction(
+		$assessmentFunc = new TwigFunction(
 			'assessments', function (
 				string $type, string $value
 			) {
-				$dataset = $this->api->getAssessmentConfig()[$type];
+				$dataset = $this->wikiRepository->getAssessmentConfig()[$type];
 				foreach ( $dataset as $key => $values ) {
 					if ( strtolower( $value ) === strtolower( $key ) ) {
 						return $values;
@@ -81,7 +83,7 @@ class ReportUpdater {
 		$this->twig->addFunction( $assessmentFunc );
 
 		// Add ucfirst() (Twig's capitalize() will make the other chars lowercase).
-		$ucfirstFunc = new Twig_SimpleFilter( 'ucfirst', function ( string $value ) {
+		$ucfirstFunc = new TwigFilter( 'ucfirst', static function ( string $value ) {
 			return ucfirst( $value );
 		} );
 		$this->twig->addFilter( $ucfirstFunc );
@@ -92,9 +94,9 @@ class ReportUpdater {
 	 *
 	 * @param array $config The JSON config from the wiki page
 	 */
-	public function updateReports( array $config ) {
+	public function updateReports( array $config ): void {
 		// Make sure config isn't empty
-		if ( !is_array( $config ) || count( $config ) < 1 ) {
+		if ( !$config ) {
 			wfLogToFile( 'Error: Invalid config. Aborting!', $this->wiki );
 			return;
 		}
@@ -120,16 +122,16 @@ class ReportUpdater {
 	 * @param string $project
 	 * @param array $config As specified in the on-wiki JSON config.
 	 */
-	private function processProject( string $project, array $config ) : void {
-		/** @var mysqli_result $pageStmt */
-		$pageStmt = $this->api->getProjectPages( $config['Name'] );
+	private function processProject( string $project, array $config ): void {
+		$pageStmt = $this->wikiRepository->getProjectPages( $config['Name'] );
 
-		if ( 0 === $pageStmt->num_rows ) {
+		if ( $pageStmt->num_rows === 0 ) {
 			wfLogToFile( "No pages found for \"$project\"", $this->wiki );
 			return;
 		}
 
-		if ( $pageStmt->num_rows > 1000000 ) { // See T164178
+		// See T164178
+		if ( $pageStmt->num_rows > 1000000 ) {
 			wfLogToFile( 'Error: ' . $project . ' is too large. Skipping.', $this->wiki );
 			return;
 		}
@@ -137,7 +139,7 @@ class ReportUpdater {
 		$startDate = date( 'Ymd00', $this->start );
 		$endDate = date( 'Ymd00', $this->end );
 
-		[ $data, $totalViews ] = $this->api->getMonthlyPageviewsAndAssessments(
+		[ $data, $totalViews ] = $this->wikiRepository->getMonthlyPageviewsAndAssessments(
 			$pageStmt,
 			$startDate,
 			$endDate,
@@ -154,7 +156,7 @@ class ReportUpdater {
 			$data[$title]['avgPageviews'] = floor( $datum['pageviews'] / $daysInMonth );
 		}
 
-		$hasLeadSection = $this->api->hasLeadSection( $config['Report'] );
+		$hasLeadSection = $this->wikiRepository->hasLeadSection( $config['Report'] );
 
 		// Generate and return wikitext.
 		$output = $this->twig->render( 'report.wikitext.twig', [
@@ -165,10 +167,10 @@ class ReportUpdater {
 			'project' => $project,
 			'pages' => $data,
 			'totalViews' => $totalViews,
-			'category' => $this->api->getWikiConfig()['category'],
+			'category' => $this->wikiRepository->getWikiConfig()['category'],
 		] );
 
-		$this->api->setText(
+		$this->wikiRepository->setText(
 			$config['Report'],
 			$output,
 			$this->i18n->msg( 'edit-summary' ),
@@ -180,21 +182,25 @@ class ReportUpdater {
 	 * Update index page for the bot, listing each WikiProject, its report
 	 * and when it was last updated.
 	 */
-	public function updateIndex() {
-		$projectsConfig = $this->api->getJSONConfig();
+	public function updateIndex(): void {
+		wfLogToFile( 'Updating index page', $this->wiki );
 
-		foreach ( $projectsConfig as $project => $config ) {
-			$projectsConfig[$project]['Updated'] = $this->api->getBotLastEditDate( $config['Report'] );
+		$projectsConfig = $this->wikiRepository->getJSONConfig();
+		$lastEdits = $this->wikiRepository->getProjectsWithLastBotTimestamp();
+
+		// Add the last updated date to the config.
+		foreach ( $lastEdits as $row ) {
+			$projectsConfig[$row['name']]['Updated'] = date( 'Y-m-d', strtotime( $row['rev_timestamp'] ) );
 		}
 
 		// Generate and return wikitext.
 		$output = $this->twig->render( 'index.wikitext.twig', [
 			'projects' => $projectsConfig,
-			'configPage' => $this->api->getWikiConfig()['config'],
+			'configPage' => $this->wikiRepository->getWikiConfig()['config'],
 		] );
 
-		$this->api->setText(
-			$this->api->getWikiConfig()['index'],
+		$this->wikiRepository->setText(
+			$this->wikiRepository->getWikiConfig()['index'],
 			$output,
 			$this->i18n->msg( 'edit-summary' )
 		);
@@ -208,7 +214,7 @@ class ReportUpdater {
 	 * @param array $config The WikiProject's configuration.
 	 * @return bool true if valid, false otherwise.
 	 */
-	private function validateProjectConfig( string $project, array $config ) {
+	private function validateProjectConfig( string $project, array $config ): bool {
 		// Check that config values are set
 		if ( !isset( $config['Name'] ) || !isset( $config['Limit'] ) || !isset( $config['Report'] ) ) {
 			wfLogToFile( 'Error: Incomplete data in config for ' . $project . '. Skipping.', $this->wiki );
@@ -217,14 +223,14 @@ class ReportUpdater {
 
 		// Don't allow writing report to main namespace. There is no easy way to grab the
 		// namespace ID so just reject titles that don't have a colon in them.
-		if ( false === strpos( $config['Report'], ':' ) ) {
+		if ( !strpos( $config['Report'], ':' ) ) {
 			wfLogToFile( "Error: $project is configured to write to the mainspace. Skipping.", $this->wiki );
 			return false;
 		}
 		wfLogToFile( 'Beginning to process: ' . $config['Name'], $this->wiki );
 
 		// Check the project exists
-		if ( !$this->api->doesTitleExist( $project ) ) {
+		if ( !$this->wikiRepository->doesTitleExist( $project ) ) {
 			wfLogToFile(
 				'Error: Project page for ' . $config['Name'] . ' does not exist! Skipping.',
 				$this->wiki

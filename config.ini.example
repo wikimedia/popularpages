@@ -1,6 +1,7 @@
-botuser = 'ExampleBot'
-botpass = '****'
+# Obtain credentials at [[Special:BotPasswords]] on the appropriate wiki.
+botuser='ExampleBot@MyTask'
+botpass='****'
 dbuser='ExampleDBUser'
 dbpass='****'
-db='enwiki_p'
-dbhost='enwiki.web.db.svc.wikimedia.cloud'
+dbhost='127.0.0.1'
+dbport='4711'

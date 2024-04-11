@@ -20,7 +20,7 @@
 | [[{{ project }}|{{ config.Name }}]]
 | [[{{ config.Report }}]]
 | {% verbatim %}{{FORMATNUM:{% endverbatim %}{{ config.Limit }}}}
-| {{ config.Updated }}
+| {% if loop.index0 == 0 %}style="white-space:nowrap" | {% endif %}{{ config.Updated }}
 |-
 {% endfor %}
 |}
