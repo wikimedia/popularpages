@@ -4,8 +4,8 @@ declare( strict_types=1 );
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Promise\Utils;
 use GuzzleHttp\Psr7\Response;
-use function GuzzleHttp\Promise\settle;
 use GuzzleRetry\GuzzleRetryMiddleware;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -25,14 +25,17 @@ class PageviewsRepository {
 	private const REQUEST_DELAY = 500;
 
 	/** @var string Base URL for the REST endpoint. */
-	protected $endpointUrl = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article';
+	protected string $endpointUrl = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article';
 
 	/** @var string The domain of the project. */
-	protected $domain;
+	protected string $domain;
 
 	/** @var Client The GuzzleHttp client. */
-	private $client;
+	private Client $client;
 
+	/**
+	 * @param string $domain
+	 */
 	public function __construct( string $domain ) {
 		$this->domain = $domain;
 		$stack = HandlerStack::create();
@@ -46,12 +49,18 @@ class PageviewsRepository {
 		 * @param array $options
 		 * @param ResponseInterface|null $response
 		 */
-		$retryNotifier = function ( $attemptNumber, $delay, $request, $options, $response ): void {
+		$retryNotifier = function (
+			int $attemptNumber,
+			float $delay,
+			RequestInterface $request,
+			array $options,
+			?ResponseInterface $response
+		): void {
 			$msg = sprintf(
-			    "Attempt #%s to retry request to %s. Server responded with %s. Waiting %s seconds.",
+				"Attempt #%s to retry request to %s. Server responded with %s. Waiting %s seconds.",
 				$attemptNumber,
 				$request->getUri()->getPath(),
-				$response->getStatusCode(),
+				$response ? $response->getStatusCode() : 'no response',
 				number_format( $delay, 2 )
 			);
 			wfLogToFile( $msg, $this->domain );
@@ -74,7 +83,7 @@ class PageviewsRepository {
 	 * @param string $end
 	 * @return array
 	 */
-	public function getPageviews( array $batch, string $start, string $end ) : array {
+	public function getPageviews( array $batch, string $start, string $end ): array {
 		$targetTitles = array_keys( $batch );
 
 		// Set up pageviews array with zero values.
@@ -93,14 +102,14 @@ class PageviewsRepository {
 		}
 
 		// Make all requests at self::REQUEST_DELAY (ms) intervals.
-		$responses = settle( $promises )->wait();
+		$responses = Utils::settle( $promises )->wait();
 
 		foreach ( $responses as $response ) {
-			if ( 'fulfilled' !== $response['state'] ) {
+			if ( $response['state'] !== 'fulfilled' ) {
 				/** @var GuzzleHttp\Exception\ClientException $reason */
 				$reason = $response['reason'];
 
-				if ( 404 == $reason->getCode() ) {
+				if ( $reason->getCode() === 404 ) {
 					// No data available; okay to omit this page from the report.
 					continue;
 				}
@@ -115,7 +124,7 @@ class PageviewsRepository {
 			$result = json_decode( $value->getBody()->getContents(), true );
 			[ $page, $count ] = $this->processResponse( $result );
 
-			foreach ( $targetTitles as $index => $targetPage ) {
+			foreach ( $targetTitles as $targetPage ) {
 				if ( in_array( $page, $batch[$targetPage] ) ) {
 					$pageviews[$targetPage] += $count;
 					break;
@@ -133,18 +142,18 @@ class PageviewsRepository {
 	 * @param string $end
 	 * @return PromiseInterface
 	 */
-	public function get( string $article, string $start, string $end ) : PromiseInterface {
+	public function get( string $article, string $start, string $end ): PromiseInterface {
 		$article = rawurlencode( $article );
-		$url = "{$this->endpointUrl}/{$this->domain}/all-access/user/$article/monthly/$start/$end";
+		$url = "$this->endpointUrl/$this->domain/all-access/user/$article/monthly/$start/$end";
 		return $this->client->getAsync( $url );
 	}
 
 	/**
 	 * Parse the given Pageviews API response, returning the sum, and average if requested.
 	 * @param array[][] $response
-	 * @return array [Article name, number of pageviews] or null if there were no pageviews.
+	 * @return array|null [Article name, number of pageviews] or null if there were no pageviews.
 	 */
-	private function processResponse( array $response ) : ?array {
+	private function processResponse( array $response ): ?array {
 		if ( empty( $response['items'] ) ) {
 			return null;
 		}

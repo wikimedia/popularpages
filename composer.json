@@ -4,31 +4,35 @@
 	"license": "MIT",
 	"homepage": "https://wikitech.wikimedia.org/wiki/Tool:Popular_Pages",
 	"require": {
-		"php" : "^7.2",
+		"php" : "^8.1",
 		"addwiki/mediawiki-api-base": "^2.3",
-		"krinkle/intuition": "^1.2.0",
-		"twig/twig": "^1.0",
-		"symfony/yaml": "^3.4",
+		"krinkle/intuition": "^1.0",
+		"twig/twig": "^3.0",
+		"symfony/yaml": "^5.0",
 		"ext-json": "*",
-      	"ext-mysqli": "*",
+		"ext-mysqli": "*",
 		"caseyamcl/guzzle_retry_middleware": "^2.2"
-    },
+	},
 	"require-dev": {
-		"mediawiki/mediawiki-codesniffer": "^0.7",
-		"jakub-onderka/php-parallel-lint": "^0.9",
-		"phpunit/phpunit": "^4.8"
+		"mediawiki/mediawiki-codesniffer": "^36.0",
+		"phpunit/phpunit": "^9.5"
 	},
 	"autoload": {
 		"files": [
-			"Logger.php",
-			"ApiHelper.php",
-			"ReportUpdater.php",
-			"PageviewsRepository.php"
+			"src/Logger.php",
+			"src/WikiRepository.php",
+			"src/ReportUpdater.php",
+			"src/PageviewsRepository.php"
 		]
 	},
 	"autoload-dev": {
 		"psr-4": {
 			"Wikimedia\\PopularPages\\Tests\\": "tests/"
+		}
+	},
+	"config": {
+		"platform": {
+			"php": "8.2"
 		}
 	},
 	"scripts": {

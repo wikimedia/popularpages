@@ -5,7 +5,11 @@
  *
  * Example usage:
  *   php generateIndex.php en.wikipedia
+ *
+ * Pass in --dry as a second argument to print the output to stdout instead of editing the wiki.
  */
+
+include_once 'vendor/autoload.php';
 
 // Exit if not run from command-line
 if ( PHP_SAPI !== 'cli' ) {
@@ -18,10 +22,8 @@ if ( !isset( $argv[1] ) || preg_match( '/^\w+\.\w+$/', $argv[1] ) !== 1 ) {
 	die();
 }
 
-include_once 'vendor/autoload.php';
-
 date_default_timezone_set( 'UTC' );
 
 // Instantiate the ReportUpdater and create the index page.
-$updater = new ReportUpdater( $argv[1] );
+$updater = new ReportUpdater( $argv[1], ( $argv[2] ?? '' ) === '--dry' );
 $updater->updateIndex();

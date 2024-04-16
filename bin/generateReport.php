@@ -7,7 +7,11 @@
  *
  * Example usage:
  *   php generateReport.php en.wikipedia "Alternative education"
+ *
+ * Pass in --dry as a third argument to print the output to stdout instead of editing the wiki.
  */
+
+include_once 'vendor/autoload.php';
 
 // Exit if not run from command-line
 if ( PHP_SAPI !== 'cli' ) {
@@ -25,10 +29,11 @@ if ( !isset( $argv[2] ) ) {
 	die();
 }
 
-date_default_timezone_set( 'UTC' );
-include_once 'vendor/autoload.php';
+$dryRun = ( $argv[3] ?? '' ) === '--dry';
 
-$api = new ApiHelper( $argv[1] );
+date_default_timezone_set( 'UTC' );
+
+$api = new WikiRepository( $argv[1], $dryRun );
 
 wfLogToFile(
 	'Running script to generate report for project ' . $argv[2] . ' on ' . $argv[1],
@@ -37,10 +42,10 @@ wfLogToFile(
 
 $projectConfig = $api->getProject( $argv[2] );
 
-if ( null === $projectConfig ) {
+if ( $projectConfig === null ) {
 	echo "Project configuration not found.\n";
 } else {
 	// Instantiate a new ReportUpdater with the specified project
-	$updater = new ReportUpdater( $argv[1] );
+	$updater = new ReportUpdater( $argv[1], $dryRun );
 	$updater->updateReports( $projectConfig );
 }

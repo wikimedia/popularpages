@@ -1,49 +1,53 @@
 <?php
 /**
- * This file contains only the ApiHelperTest class.
+ * This file contains only the WikiRepositoryTest class.
  */
 
 /** Require dependencies and set the timezone to UTC (may vary on local machines). */
+
+use PHPUnit\Framework\TestCase;
+
 require __DIR__ . '/../vendor/autoload.php';
 date_default_timezone_set( 'UTC' );
 
 /**
- * Tests for functions in ApiHelper.php.
+ * Tests for functions in WikiRepository.php.
+ * @covers WikiRepository
  */
-class ApiHelperTest extends \PHPUnit_Framework_TestCase {
+class WikiRepositoryTest extends TestCase {
 
-	/** @var ApiHelper The ApiHelper instance. */
-	protected $apiHelper;
+	/** @var WikiRepository The WikiRepository instance. */
+	protected WikiRepository $wikiRepository;
 
 	/**
-	 * Constructor for the ApiHelperTest.
+	 * Constructor for the WikiRepositoryTest.
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->apiHelper = new ApiHelper();
+		$this->wikiRepository = new WikiRepository();
 	}
 
 	/**
 	 * Test the doesTitleExist function
 	 */
-	public function testDoesTitleExist() {
-		$this->assertTrue( $this->apiHelper->doesTitleExist( 'Barack Obama' ) );
-		$this->assertTrue( $this->apiHelper->doesTitleExist( 'Mickey Mouse' ) );
-		$this->assertFalse( $this->apiHelper->doesTitleExist( 'DumDeeDooDum' ) );
-		$this->assertFalse( $this->apiHelper->doesTitleExist( 'Invalid title' ) );
+	public function testDoesTitleExist(): void {
+		$this->assertTrue( $this->wikiRepository->doesTitleExist( 'Barack Obama' ) );
+		$this->assertTrue( $this->wikiRepository->doesTitleExist( 'Mickey Mouse' ) );
+		$this->assertFalse( $this->wikiRepository->doesTitleExist( 'DumDeeDooDum' ) );
+		$this->assertFalse( $this->wikiRepository->doesTitleExist( 'Invalid title' ) );
 	}
 
 	/**
 	 * Test the hasLeadSection function
 	 */
-	public function testHasLeadSection() {
+	public function testHasLeadSection(): void {
 		$this->assertTrue(
-			$this->apiHelper->hasLeadSection(
+			$this->wikiRepository->hasLeadSection(
 				'Wikipedia:WikiProject Medicine/Popular pages'
 			)
 		);
 		$this->assertFalse(
-			$this->apiHelper->hasLeadSection(
+			$this->wikiRepository->hasLeadSection(
 				'User:Community Tech bot/Popular pages config.json'
 			)
 		);
@@ -55,8 +59,8 @@ class ApiHelperTest extends \PHPUnit_Framework_TestCase {
 	 * Check for presence of two titles in Disney project and the presence
 	 * of their importance and class params.
 	 */
-	public function ertestGetProjectPages() {
-		$pages = $this->apiHelper->getProjectPages( 'Disney' );
+	public function ertestGetProjectPages(): void {
+		$pages = $this->wikiRepository->getProjectPages( 'Disney' );
 		$this->assertArrayHasKey( 'Walt Disney', $pages );
 		$this->assertArrayHasKey( 'Pixar', $pages );
 		$this->assertArrayHasKey( 'importance', $pages['Pixar'] );
@@ -68,14 +72,14 @@ class ApiHelperTest extends \PHPUnit_Framework_TestCase {
 	 *
 	 * Test for pageviews for the month of February for three known pages
 	 */
-	public function ertestGetMonthlyPageviews() {
+	public function ertestGetMonthlyPageviews(): void {
 		$pages = [ 'Star Wars', 'Zootopia', 'The Lion King' ];
 		$expectedResult = [
 			'Star Wars' => 517930,
 			'Zootopia' => 313960,
 			'The Lion King' => 211521
 		];
-		$actualResult = $this->apiHelper->getMonthlyPageviews( $pages, '2017020100', '2017022800' );
+		$actualResult = $this->wikiRepository->getMonthlyPageviews( $pages, '2017020100', '2017022800' );
 		$this->assertEquals( $expectedResult, $actualResult );
 	}
 
@@ -84,8 +88,8 @@ class ApiHelperTest extends \PHPUnit_Framework_TestCase {
 	 *
 	 * Update sandbox page with dummy text
 	 */
-	public function testSetText() {
-		$result = $this->apiHelper->setText( 'User:NKohli (WMF)/sandbox', 'Hi there! This is a test' );
+	public function testSetText(): void {
+		$result = $this->wikiRepository->setText( 'User:NKohli (WMF)/sandbox', 'Hi there! This is a test' );
 		$this->assertEquals( $result['edit']['result'], "Success" );
 	}
 }

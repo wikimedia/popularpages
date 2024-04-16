@@ -1,8 +1,6 @@
 <?php
-/**
- * This file contains only the ApiHelper class.
- */
 
+use GuzzleHttp\Promise\PromiseInterface;
 use Krinkle\Intuition\Intuition;
 use Mediawiki\Api\ApiUser;
 use Mediawiki\Api\FluentRequest;
@@ -11,61 +9,69 @@ use Mediawiki\Api\MediawikiSession;
 use Symfony\Component\Yaml\Yaml;
 
 /**
- * An ApiHelper assists with fetching data from the API and database.
+ * An WikiRepository assists with fetching data from the API and database.
  * Post-processing of this data is minimal.
  */
-class ApiHelper {
+class WikiRepository {
 
 	/** @var MediawikiApi The MediawikiApi interface. */
-	protected $api;
+	protected MediawikiApi $api;
 
 	/** @var string URL to the wiki's API endpoint. */
-	protected $apiurl;
+	protected string $apiUrl;
 
-	/** @var mysqli $db Connection to replica database. */
-	protected $db;
+	/** @var mysqli Connection to replica database. */
+	protected mysqli $db;
 
 	/** @var string The relevant wiki, in the form lang.project */
-	protected $wiki;
+	protected string $wiki;
 
 	/** @var ApiUser The ApiUser instance. */
-	protected $user;
+	protected ApiUser $user;
+
+	/** @var string The bot's username (not BotPassword username). */
+	protected string $username;
 
 	/** @var string[] The bot's credentials. */
-	protected $creds;
+	protected array $creds;
 
 	/** @var string[][] Assessment configuration (colors, icons, etc.) */
-	protected $assessmentConfig;
+	protected array $assessmentConfig;
 
 	/** @var string[] The wiki's configuration of where relevant pages live. */
-	protected $wikiConfig;
+	protected array $wikiConfig;
 
 	/** @var string[][] Pages queued for processing. With keys 'target' and ' */
-	protected $queue;
+	protected array $queue;
 
 	/** @var PageviewsRepository Repository for fetching pageviews. */
-	protected $pageviewsRepo;
+	protected PageviewsRepository $pageviewsRepo;
 
 	/** @var Intuition Instance of Intuition translation service. */
-	protected $i18n;
+	protected Intuition $i18n;
+
+	/** @var bool Print to stdout instead of editing. */
+	protected bool $dryRun;
 
 	/**
-	 * ApiHelper constructor.
+	 * WikiRepository constructor.
 	 *
 	 * @param string $wiki Wiki in the format lang.project, such as en.wikipedia
+	 * @param bool $dryRun Set to print output to stdout instead of saving to the wiki.
 	 */
-	public function __construct( string $wiki = 'en.wikipedia' ) {
+	public function __construct( string $wiki = 'en.wikipedia', bool $dryRun = false ) {
 		$this->creds = parse_ini_file( 'config.ini' );
 		$this->wiki = $wiki;
-		$this->apiurl = "https://$wiki.org/w/api.php";
-		$this->api = MediawikiApi::newFromApiEndpoint( $this->apiurl );
+		$this->dryRun = $dryRun;
+		$this->apiUrl = "https://$wiki.org/w/api.php";
+		$this->api = MediawikiApi::newFromApiEndpoint( $this->apiUrl );
 		$this->login();
-		$this->wikiConfig = Yaml::parseFile( __DIR__ . '/wikis.yml' )[$wiki];
+		$this->wikiConfig = Yaml::parseFile( __DIR__ . '/../config/wikis.yaml' )[$wiki];
 		$this->pageviewsRepo = new PageviewsRepository( $this->wiki );
 
 		// Setup Intuition.
 		$this->i18n = new Intuition( 'popular-pages' );
-		$this->i18n->registerDomain( 'popular-pages', __DIR__ . '/messages' );
+		$this->i18n->registerDomain( 'popular-pages', __DIR__ . '/../messages' );
 		$this->i18n->setLang( explode( '.', $wiki )[0] );
 	}
 
@@ -75,15 +81,11 @@ class ApiHelper {
 	 * to access the same Intuition instance.
 	 * @return Intuition
 	 */
-	public function getI18n() : Intuition {
+	public function getI18n(): Intuition {
 		return $this->i18n;
 	}
 
-	private function connectDb() : void {
-		if ( isset( $this->db ) ) {
-			$this->db->close();
-		}
-
+	private function connectDb(): void {
 		// In production, the host is *.web.db.svc.wikimedia.cloud, where the asterisk
 		// is dynamically replaced with the database name.
 		$db = str_replace( '_p', '', $this->wikiConfig['database'] );
@@ -99,10 +101,18 @@ class ApiHelper {
 	}
 
 	/**
+	 * Disconnect from the database.
+	 */
+	private function disconnectDb(): void {
+		$this->db->close();
+	}
+
+	/**
 	 * Log in
 	 */
-	public function login() {
-		$this->user = new ApiUser( $this->creds['botuser'], $this->creds['botpass'], $this->apiurl );
+	public function login(): void {
+		$this->user = new ApiUser( $this->creds['botuser'], $this->creds['botpass'], $this->apiUrl );
+		$this->username = explode( '@', $this->creds['botuser'] )[ 0 ];
 		$this->api->login( $this->user );
 	}
 
@@ -111,7 +121,7 @@ class ApiHelper {
 	 * 'config' (location of WikiProjects config) and 'category' (category the reports are put in).
 	 * @return string[]
 	 */
-	public function getWikiConfig() {
+	public function getWikiConfig(): array {
 		return $this->wikiConfig;
 	}
 
@@ -121,7 +131,7 @@ class ApiHelper {
 	 * @param string $title Title to check existence for
 	 * @return bool True if title exists else false
 	 */
-	public function doesTitleExist( $title ) {
+	public function doesTitleExist( string $title ): bool {
 		$params = [ 'titles' => $title ];
 		$result = $this->apiQuery( $params );
 		foreach ( $result['query']['pages'] as $r ) {
@@ -138,7 +148,7 @@ class ApiHelper {
 	 * @param string $title The page title we're looking for first section in
 	 * @return bool True if exists, else false
 	 */
-	public function hasLeadSection( $title ) {
+	public function hasLeadSection( string $title ): bool {
 		if ( !$this->doesTitleExist( $title ) ) {
 			return false;
 		}
@@ -157,7 +167,7 @@ class ApiHelper {
 	 * @param string $project Name of the project, i.e. 'Medicine'
 	 * @return mysqli_result
 	 */
-	public function getProjectPages( $project ) : mysqli_result {
+	public function getProjectPages( string $project ): mysqli_result {
 		wfLogToFile( 'Fetching pages and assessments for project ' . $project, $this->wiki );
 
 		$this->connectDb();
@@ -179,8 +189,9 @@ class ApiHelper {
 			AND page_namespace = 0" );
 		$stmt->bind_param( 's', $project );
 		$stmt->execute();
-
-		return $stmt->get_result();
+		$ret = $stmt->get_result();
+		$this->disconnectDb();
+		return $ret;
 	}
 
 	/**
@@ -199,7 +210,7 @@ class ApiHelper {
 		string $start,
 		string $end,
 		int $limit
-	) {
+	): array {
 		wfLogToFile( 'Fetching monthly pageviews', $this->wiki );
 
 		$out = [];
@@ -224,8 +235,8 @@ class ApiHelper {
 				$unknownMsg = $this->i18n->msg( 'unknown' );
 				$out[$target] = [
 					'pageviews' => 0,
-					'class' => '' === $row['pa_class'] ? $unknownMsg : $row['pa_class'],
-					'importance' => '' === $row['pa_importance'] ? $unknownMsg : $row['pa_importance'],
+					'class' => $row['pa_class'] === '' ? $unknownMsg : $row['pa_class'],
+					'importance' => $row['pa_importance'] === '' ? $unknownMsg : $row['pa_importance'],
 				];
 			}
 
@@ -261,9 +272,14 @@ class ApiHelper {
 		return [ $this->sortAndTruncatePagesList( $out, $limit ), $totalPageviews ];
 	}
 
-	private function sortAndTruncatePagesList( array $out, int $limit ) : array {
+	/**
+	 * @param array $out
+	 * @param int $limit
+	 * @return array
+	 */
+	private function sortAndTruncatePagesList( array $out, int $limit ): array {
 		// Sort by pageviews descending.
-		uasort( $out, function ( $a, $b ) {
+		uasort( $out, static function ( $a, $b ) {
 			if ( $a['pageviews'] === $b['pageviews'] ) {
 				return 0;
 			}
@@ -288,7 +304,7 @@ class ApiHelper {
 		string $start,
 		string $end,
 		int &$totalPageviews
-	) : void {
+	): void {
 		$batchResult = $this->pageviewsRepo->getPageviews( $batch, $start, $end );
 		foreach ( $batchResult as $title => $count ) {
 			$out[$title]['pageviews'] += $count;
@@ -307,14 +323,14 @@ class ApiHelper {
 	 * @param string $text Text to set on the page
 	 * @param string|null $summary Edit summary
 	 * @param bool $section section to update on the page
-	 * @return array|\GuzzleHttp\Promise\PromiseInterface
+	 * @return array|PromiseInterface|null
 	 */
 	public function setText(
 		string $page,
 		string $text,
 		?string $summary = null,
 		bool $section = false
-	) {
+	): PromiseInterface|array|null {
 		if ( !$this->api->isLoggedin() ) {
 			$this->login();
 		}
@@ -334,7 +350,11 @@ class ApiHelper {
 
 		$result = null;
 		try {
-			$result = $this->apiQuery( $params, 'edit', 'post' );
+			if ( $this->dryRun ) {
+				print_r( $params );
+			} else {
+				$result = $this->apiQuery( $params, 'edit', 'post' );
+			}
 		} catch ( Exception $e ) {
 			// Silently fail, otherwise this could break this halts execution
 			// and the bot fails to update all subsequent reports.
@@ -355,7 +375,7 @@ class ApiHelper {
 	 *
 	 * @return array Config data.
 	 */
-	public function getJSONConfig() {
+	public function getJSONConfig(): array {
 		$params = [
 			'page' => $this->wikiConfig['config'],
 			'prop' => 'wikitext'
@@ -374,27 +394,63 @@ class ApiHelper {
 	 *
 	 * @return array Config for WikiProjects which were not updated in the current month.
 	 */
-	public function getStaleProjects() {
+	public function getStaleProjects(): array {
+		wfLogToFile( 'Checking for stale projects', $this->wiki );
 		$config = $this->getJSONConfig();
-		foreach ( $config as $project => $info ) {
-			$params = [
-				'prop' => 'revisions',
-				'titles' => $info['Report'],
-				'rvprop' => 'timestamp',
-				'rvuser' => $this->creds['botuser'],
-				'rvlimit' => 1
-			];
-			$res = $this->apiQuery( $params );
-			if ( isset( $res['query']['pages'][0]['revisions'][0]['timestamp'] ) ) {
-				$timestamp = $res['query']['pages'][0]['revisions'][0]['timestamp'];
-				$rmonth = date( "F", strtotime( $timestamp ) );
-				$cmonth = date( "F" );
-				if ( $rmonth === $cmonth ) {
-					unset( $config[$project] ); // If report was generated in the same month, skip it
-				}
+
+		$botTimestamps = $this->getProjectsWithLastBotTimestamp();
+		// Remove projects from the config that have already been updated.
+		foreach ( $botTimestamps as $row ) {
+			$revTimestamp = strtotime( $row['rev_timestamp'] );
+			if ( $revTimestamp >= strtotime( date( 'Y-m-01' ) ) ) {
+				unset( $config[$row['name']] );
 			}
 		}
+
 		return $config;
+	}
+
+	/**
+	 * Get timestamps of the bot's last edits for all WikiProjects.
+	 *
+	 * @return array
+	 */
+	public function getProjectsWithLastBotTimestamp(): array {
+		wfLogToFile( "Fetching timestamps of the bot's last edits", $this->wiki );
+		$config = $this->getJSONConfig();
+		// Get the project names from the config, keyed by db key.
+		$projects = array_flip( array_map( static function ( $info ) {
+			// FIXME: assumes reports are in the Project namespace.
+			return preg_replace( '/^.*?:/', '', str_replace( ' ', '_', $info['Report'] ) );
+		}, $config ) );
+		// For use in the query.
+		$titles = array_keys( $projects );
+
+		$this->connectDb();
+		$paramsStr = rtrim( str_repeat( '?,', count( $titles ) ), ',' );
+		$stmt = $this->db->prepare( "
+			SELECT page_title, MAX(rev_timestamp) AS rev_timestamp
+			FROM revision_userindex
+			JOIN page ON rev_page = page_id
+			WHERE rev_actor = (
+				SELECT actor_id
+				FROM actor
+				WHERE actor_name = ?
+			)
+			AND page_title IN ($paramsStr)
+			AND page_namespace = 4 -- FIXME: assumes reports are in the Project namespace
+			GROUP BY page_title" );
+		$stmt->bind_param( 's' . str_repeat( 's', count( $titles ) ), $this->username, ...$titles );
+		$stmt->execute();
+		$ret = $stmt->get_result()->fetch_all( MYSQLI_ASSOC );
+
+		// Add back in the project names for easier reference.
+		$ret = array_map( static function ( $row ) use ( $projects ) {
+			$row['name'] = $projects[$row['page_title']];
+			return $row;
+		}, $ret );
+		$this->disconnectDb();
+		return $ret;
 	}
 
 	/**
@@ -404,7 +460,7 @@ class ApiHelper {
 	 *     of the JSON config.
 	 * @return array|null Config for a single WikiProject or null if project not found.
 	 */
-	public function getProject( $projectName ) {
+	public function getProject( string $projectName ): ?array {
 		$config = $this->getJSONConfig();
 		foreach ( $config as $project => $info ) {
 			if ( $info['Name'] === $projectName ) {
@@ -419,15 +475,15 @@ class ApiHelper {
 	 * Used on the WikiProject index page, since sometimes we run one-off reports of a specific
 	 * WikiProject, at which point we don't know the 'last updated' date for the other reports.
 	 *
-	 * @param  string $page
+	 * @param string $page
 	 * @return string Date in YYYY-MM-DD format.
 	 */
-	public function getBotLastEditDate( $page ) {
+	public function getBotLastEditDate( string $page ): string {
 		$params = [
 			'prop' => 'revisions',
 			'titles' => $page,
 			'rvprop' => 'timestamp',
-			'rvuser' => $this->creds['botuser'],
+			'rvuser' => $this->username,
 			'rvlimit' => 1
 		];
 		$res = $this->apiQuery( $params );
@@ -449,14 +505,18 @@ class ApiHelper {
 	 * @return GuzzleHttp\Promise\PromiseInterface|array Promise if $async is true,
 	 *   otherwise the API result in the form of an array
 	 */
-	public function apiQuery( $params, $action = 'query', $method = 'get', $async = false ) {
+	public function apiQuery(
+		array $params,
+		string $action = 'query',
+		string $method = 'get',
+		bool $async = false
+	): PromiseInterface|array {
 		$factory = FluentRequest::factory()->setAction( $action )
 			->setParam( 'formatversion', 2 )
 			->setParam( 'format', 'json' );
 		foreach ( $params as $param => $value ) {
 			$factory->setParam( $param, $value );
 		}
-		$res = null;
 		if ( $method == 'get' ) {
 			if ( $async ) {
 				try {
@@ -500,8 +560,8 @@ class ApiHelper {
 	 *
 	 * @return string[][]
 	 */
-	public function getAssessmentConfig() {
-		if ( $this->assessmentConfig !== null ) {
+	public function getAssessmentConfig(): array {
+		if ( isset( $this->assessmentConfig ) ) {
 			return $this->assessmentConfig;
 		}
 
@@ -511,7 +571,7 @@ class ApiHelper {
 			'https://xtools.wmflabs.org/api/project/assessments'
 		)->getBody()->getContents();
 
-		$this->assessmentConfig = json_decode( $ret, true )['config'][$this->wiki.'.org'];
+		$this->assessmentConfig = json_decode( $ret, true )['config'][$this->wiki . '.org'];
 
 		return $this->assessmentConfig;
 	}
