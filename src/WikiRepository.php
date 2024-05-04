@@ -60,7 +60,7 @@ class WikiRepository {
 	 * @param bool $dryRun Set to print output to stdout instead of saving to the wiki.
 	 */
 	public function __construct( string $wiki = 'en.wikipedia', bool $dryRun = false ) {
-		$this->creds = parse_ini_file( 'config.ini' );
+		$this->creds = parse_ini_file( __DIR__ . '/../config.ini' );
 		$this->wiki = $wiki;
 		$this->dryRun = $dryRun;
 		$this->apiUrl = "https://$wiki.org/w/api.php";

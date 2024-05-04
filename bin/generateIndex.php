@@ -9,7 +9,7 @@
  * Pass in --dry as a second argument to print the output to stdout instead of editing the wiki.
  */
 
-include_once 'vendor/autoload.php';
+include_once __DIR__ . '/../vendor/autoload.php';
 
 // Exit if not run from command-line
 if ( PHP_SAPI !== 'cli' ) {
