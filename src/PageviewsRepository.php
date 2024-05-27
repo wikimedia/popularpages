@@ -19,7 +19,7 @@ use Psr\Http\Message\ResponseInterface;
  */
 class PageviewsRepository {
 	private const REQUEST_TIMEOUT = 3;
-	private const CONNECT_TIMEOUT = 1.5;
+	private const CONNECT_TIMEOUT = 3;
 
 	/** @var int This defines the delay between *groups* of requests. */
 	private const REQUEST_DELAY = 500;
